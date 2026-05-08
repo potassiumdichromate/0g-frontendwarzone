@@ -12,6 +12,7 @@ import IntraverseLogin from './pages/intraverse/IntraverseLogin';
 import IntraverseLoginButton from './pages/intraverse/IntraverseLoginButton';
 import AutoLogin from './pages/AutoLogin';
 import LoginPage from './pages/LoginPage';
+import OGDashboard from './pages/og-dashboard/OGDashboard';
 import './App.css';
 import './styles/warzone-ui.css';
 
@@ -52,6 +53,14 @@ function AppShell() {
           <Route path="/intraverse-auth/callback/*" element={<IntraverseLogin />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auto-login" element={<AutoLogin />} />
+          <Route
+            path="/og-dashboard"
+            element={
+              <ProtectedRoute>
+                <OGDashboard />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </div>

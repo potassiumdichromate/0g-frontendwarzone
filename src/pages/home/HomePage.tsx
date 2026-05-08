@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { usePrivy } from "@privy-io/react-auth";
 import { useScrollAnimations, gsap } from "@/hooks/useGSAP";
 import { GameButton } from "@/components/ui/game-button";
-import { Trophy, ShoppingCart, ArrowRight, Play, ChevronDown, Map, Users, Shield, Menu, X, Swords, Zap, Star, Lock, Crosshair, Crown, CalendarDays, Copy, Check, LogOut, Wallet } from "lucide-react";
+import { Trophy, ShoppingCart, ArrowRight, Play, ChevronDown, Map, Users, Shield, Menu, X, Swords, Zap, Star, Lock, Crosshair, Crown, CalendarDays, Copy, Check, LogOut, Wallet, LayoutDashboard } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useWallet } from "@/contexts/WalletContext";
 import { getTournaments } from "@/utils/api";
@@ -209,6 +209,16 @@ export function HomePage() {
                         <span className="hidden sm:inline">{isConnected ? "GAME" : !privyConfigured ? "N/A" : "CONNECT"}</span>
                       </GameButton>
                       {isConnected && (
+                        <GameButton
+                          variant="metal"
+                          size="sm"
+                          onClick={() => navigate("/og-dashboard")}
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5 mr-1" />
+                          <span className="hidden lg:inline">0G</span>
+                        </GameButton>
+                      )}
+                      {isConnected && (
                         <button
                           type="button"
                           onClick={() => void disconnect()}
@@ -284,6 +294,18 @@ export function HomePage() {
                         >
                           <Play className="w-4 h-4 mr-2" />
                           GAME
+                        </GameButton>
+                        <GameButton
+                          variant="metal"
+                          size="sm"
+                          className="w-full mb-2"
+                          onClick={() => {
+                            navigate("/og-dashboard");
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          0G DASHBOARD
                         </GameButton>
                         <GameButton
                           variant="metal"
