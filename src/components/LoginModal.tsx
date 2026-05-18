@@ -149,13 +149,13 @@ function getFriendlyPrivyErrorMessage(errorCode: string | undefined, fallback?: 
     case 'allowlist_rejected':
       return 'This site origin is not allowed for wallet login in the current Privy configuration.'
     case 'unsupported_chain_id':
-      return 'Your wallet could not switch to the Somnia network (chain 5031). In MetaMask, approve adding Somnia when prompted, then try again.'
+      return 'Your wallet could not switch to the 0G network (chain 16661). In MetaMask, approve adding 0G when prompted, then try again.'
     case 'unable_to_sign':
     case 'invalid_message':
       return 'Signature was not completed. Unlock MetaMask, approve the network if asked, then sign the login message.'
     case 'generic_connect_wallet_error':
     case 'unknown_connect_wallet_error':
-      return 'Wallet connection failed. On mobile: use MetaMask app via WalletConnect, approve Somnia (5031) when prompted, and complete the signature. If it keeps failing, try opening the site inside MetaMask’s browser.'
+      return "Wallet connection failed. On mobile: use MetaMask app via WalletConnect, approve 0G (16661) when prompted, and complete the signature. If it keeps failing, try opening the site inside MetaMask’s browser."
     default:
       return fallback || ''
   }
@@ -998,7 +998,7 @@ export default function LoginModal({
     }
   }, [ready, authenticated, user, onClose])
 
-  // Wallet flow: after Privy wallet auth, switch chain to Somnia and close.
+  // Wallet flow: after Privy wallet auth, switch chain to 0G and close.
   // Privy already handled proof-of-ownership (SIWE), no extra personal_sign needed.
   useEffect(() => {
     if (!open || !ready || !authenticated || !walletFlowPending) return
@@ -1012,30 +1012,30 @@ export default function LoginModal({
       try {
         setWalletFlowBusy(true)
         setError('')
-        setStatusMessage('Switching to Somnia network…')
+        setStatusMessage('Switching to 0G network…')
 
         // Switch chain via window.ethereum directly (more reliable than Privy's switchChain)
         const provider = (window as Window & { ethereum?: any }).ethereum
         if (provider?.request) {
-          const somniaHex = `0x${targetChainId.toString(16)}`
+          const chainHex = `0x${targetChainId.toString(16)}`
           try {
             const currentChain = await provider.request({ method: 'eth_chainId' })
-            if (typeof currentChain === 'string' && currentChain.toLowerCase() !== somniaHex.toLowerCase()) {
+            if (typeof currentChain === 'string' && currentChain.toLowerCase() !== chainHex.toLowerCase()) {
               try {
                 await provider.request({
                   method: 'wallet_switchEthereumChain',
-                  params: [{ chainId: somniaHex }],
+                  params: [{ chainId: chainHex }],
                 })
               } catch (switchErr: any) {
                 if (switchErr?.code === 4902) {
                   await provider.request({
                     method: 'wallet_addEthereumChain',
                     params: [{
-                      chainId: somniaHex,
-                      chainName: 'Somnia',
-                      nativeCurrency: { name: 'Somnia', symbol: 'SOMI', decimals: 18 },
-                      rpcUrls: ['https://api.infra.mainnet.somnia.network'],
-                      blockExplorerUrls: ['https://explorer.somnia.network/'],
+                      chainId: chainHex,
+                      chainName: '0G Mainnet',
+                      nativeCurrency: { name: '0G', symbol: '0G', decimals: 18 },
+                      rpcUrls: ['https://evmrpc.0g.ai'],
+                      blockExplorerUrls: ['https://chainscan.0g.ai'],
                     }],
                   })
                 }

@@ -32,7 +32,7 @@ import './iap.css';
 import { getMarketplacePurchaseStatus, getPlayerProfile, updateMarketplaceData } from '../../utils/api';
 import { useAccount, useChainId, useWaitForTransactionReceipt, useWalletClient } from 'wagmi';
 import { useWallet } from '../../contexts/WalletContext';
-import { somniaTestnet } from '../../wagmi.config';
+import { zgChain } from '../../wagmi.config';
 import { getAllowedChainFromEnv } from '../../lib/chain';
 import { encodeFunctionData, keccak256, parseEther, stringToBytes } from 'viem';
 import contractAbi from '../../abi/WarzoneInAppPurchase.json';
@@ -41,7 +41,7 @@ import MobileBottomNav from '../../components/MobileBottomNav';
 import IapMarketplaceLayout from './IapMarketplaceLayout';
 import type { IapMarketDisplayItem, IapMarketCategory } from './IapMarketplaceLayout';
 
-// Simple price map for Guns (SOMI)
+// Simple price map for Guns (0G)
 const GUN_PRICES_ETH = {
   'Shotgun': '0.8',
   'Bullpup': '1.6',
@@ -82,7 +82,7 @@ const GUN_NAME_BY_ID = Object.fromEntries(
   Object.entries(GUN_IDS).map(([name, id]) => [String(id), name])
 );
 
-// Price maps for Coins and Gems (SOMI)
+// Price maps for Coins and Gems (0G)
 const COIN_PRICES_ETH = {
   '100': '0.5',
   '500': '2',
@@ -189,7 +189,7 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
   const { isLoading: isConfirming, isSuccess: isConfirmed, error: waitError } = useWaitForTransactionReceipt({
     hash: txHash,
   });
-  const { switchToSomnia, refreshProfile } = useWallet();
+  const { switchTo0G, refreshProfile } = useWallet();
   const [switchingNetwork, setSwitchingNetwork] = useState(false);
   const {
     privyReady,
@@ -203,17 +203,16 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const currentChainId = useChainId();
 
-  // Contract configuration (Somnia mainnet)
   const contractAddress = import.meta.env.VITE_IAP_CONTRACT_ADDRESS;
 
   // Use the same allowed chain config as the login flow (LoginModal)
   const effectiveAllowedChain = allowedChain || getAllowedChainFromEnv() || {
-    caip2: 'eip155:5031',
-    decimalChainId: 5031,
-    hexChainId: '0x13a7',
-    chainName: 'Somnia Mainnet',
-    rpcUrls: ['https://api.infra.mainnet.somnia.network'],
-    blockExplorerUrls: ['https://explorer.somnia.network'],
+    caip2: 'eip155:16661',
+    decimalChainId: 16661,
+    hexChainId: '0x4115',
+    chainName: '0G Mainnet',
+    rpcUrls: ['https://evmrpc.0g.ai'],
+    blockExplorerUrls: ['https://chainscan.0g.ai'],
   };
 
 
@@ -373,14 +372,14 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
         return;
       }
 
-      // Step 1: Switch to Somnia via Privy's wallet.switchChain()
+      // Step 1: Switch to 0G via Privy's wallet.switchChain()
       const privyWallet = Array.isArray(privyWallets) ? privyWallets[0] : null;
       if (privyWallet?.switchChain) {
         try {
-          await privyWallet.switchChain(somniaTestnet.id);
+          await privyWallet.switchChain(zgChain.id);
         } catch (e: any) {
           if (e?.code === 4001 || /rejected|denied/i.test(e?.message || '')) {
-            alert('Please switch to the Somnia network to purchase.');
+            alert('Please switch to the 0G network to purchase.');
             return;
           }
           console.warn('Chain switch warning (continuing):', e?.message);
@@ -414,7 +413,7 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
           to: contractAddress,
           value: valueWei,
           data,
-          chainId: somniaTestnet.id,
+          chainId: zgChain.id,
         },
         {
           address: activeWallet.address,
@@ -444,9 +443,9 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
       if (code === 4001 || /rejected/i.test(msg)) {
         alert('Transaction rejected in wallet.');
       } else if (/insufficient funds/i.test(msg)) {
-        alert('Insufficient SOMI for this purchase (including gas).');
+        alert('Insufficient 0G for this purchase (including gas).');
       } else if (/chain|network|mismatch/i.test(msg) || err?.name === 'ChainMismatchError') {
-        alert('Wrong network selected. Please switch to Somnia and try again.');
+        alert('Wrong network selected. Please switch to 0G and try again.');
       } else if (/GunAlreadyPurchased/i.test(msg)) {
         alert('You already own this gun.');
       } else if (/No embedded or connected wallet/i.test(msg)) {
@@ -473,9 +472,9 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
               <div className="success-item-row">
                 <span className="label">Price:</span>
                 <span className="value">
-                  {type === 'Guns' && GUN_PRICES_ETH[value] ? `${GUN_PRICES_ETH[value]} SOMI` : ''}
-                  {type === 'Coins' && COIN_PRICES_ETH[value] ? `${COIN_PRICES_ETH[value]} SOMI` : ''}
-                  {type === 'Gems' && GEM_PRICES_ETH[value] ? `${GEM_PRICES_ETH[value]} SOMI` : ''}
+                  {type === 'Guns' && GUN_PRICES_ETH[value] ? `${GUN_PRICES_ETH[value]} 0G` : ''}
+                  {type === 'Coins' && COIN_PRICES_ETH[value] ? `${COIN_PRICES_ETH[value]} 0G` : ''}
+                  {type === 'Gems' && GEM_PRICES_ETH[value] ? `${GEM_PRICES_ETH[value]} 0G` : ''}
                 </span>
               </div>
               {pendingOrder?.orderId && (
@@ -495,7 +494,7 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
               {txHash && (
                 <a
                   className="view-explorer wz-btn wz-btn--sm wz-btn--outline wz-btn--cap-normal"
-                  href={`https://explorer.somnia.network/tx/${txHash}`}
+                  href={`https://chainscan.0g.ai/tx/${txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -534,9 +533,9 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
         <div className="purchase-meta">
           {(type === 'Guns' || type === 'Coins' || type === 'Gems') && (
             <div className="price-badge">
-              {type === 'Guns' && GUN_PRICES_ETH[value] ? `${value} – ${GUN_PRICES_ETH[value]} SOMI` : ''}
-              {type === 'Coins' && COIN_PRICES_ETH[value] ? `${value} – ${COIN_PRICES_ETH[value]} SOMI` : ''}
-              {type === 'Gems' && GEM_PRICES_ETH[value] ? `${value} – ${GEM_PRICES_ETH[value]} SOMI` : ''}
+              {type === 'Guns' && GUN_PRICES_ETH[value] ? `${value} – ${GUN_PRICES_ETH[value]} 0G` : ''}
+              {type === 'Coins' && COIN_PRICES_ETH[value] ? `${value} – ${COIN_PRICES_ETH[value]} 0G` : ''}
+              {type === 'Gems' && GEM_PRICES_ETH[value] ? `${value} – ${GEM_PRICES_ETH[value]} 0G` : ''}
             </div>
           )}
           {isSending && (

@@ -19,13 +19,13 @@ export default function NetworkModal({ open, onClose, onSwitched }: Props) {
 
   const allowed: AllowedChainConfig =
     getAllowedChainFromEnv() || {
-      caip2: 'eip155:5031',
-      decimalChainId: 5031,
-      hexChainId: '0x13a7',
-      chainName: 'Somnia Mainnet',
-      nativeCurrency: { name: 'Somnia', symbol: 'SOMI', decimals: 18 },
-      rpcUrls: ['https://api.infra.mainnet.somnia.network'],
-      blockExplorerUrls: ['https://explorer.somnia.network'],
+      caip2: 'eip155:16661',
+      decimalChainId: 16661,
+      hexChainId: '0x4115',
+      chainName: '0G Mainnet',
+      nativeCurrency: { name: '0G', symbol: '0G', decimals: 18 },
+      rpcUrls: ['https://evmrpc.0g.ai'],
+      blockExplorerUrls: ['https://chainscan.0g.ai'],
     }
 
   useEffect(() => {

@@ -27,6 +27,7 @@ import decoTreasureBoxGems from "@/assets/treasure-box-gems.png";
 import decoMissionLog from "@/assets/deco-mission-log.png";
 import decoRubble from "@/assets/deco-rubble.png";
 import decoBossBadge from "@/assets/deco-boss-badge.png";
+import zgLogo from "@/assets/0G-white-logo.png";
 
 const topPlayers = [
   { rank: 1, name: "Ripkun", coins: 5158977 },
@@ -215,7 +216,7 @@ export function HomePage() {
                           onClick={() => navigate("/og-dashboard")}
                         >
                           <LayoutDashboard className="w-3.5 h-3.5 mr-1" />
-                          <span className="hidden lg:inline">0G</span>
+                          <img src={zgLogo} alt="0G" className="hidden lg:block h-7 w-auto" />
                         </GameButton>
                       )}
                       {isConnected && (
@@ -392,7 +393,9 @@ export function HomePage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
                 </span>
-                <span className="font-russo text-[10px] sm:text-xs tracking-widest text-gold">POWERED BY SOMNIA</span>
+                <span className="font-russo text-[10px] sm:text-xs tracking-widest text-gold flex items-center gap-1.5">
+                  POWERED BY <img src={zgLogo} alt="0G" className="h-6 sm:h-7 w-auto" />
+                </span>
               </motion.div>
 
               <motion.h1 initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15, duration: 0.7 }}
@@ -968,7 +971,7 @@ export function HomePage() {
                 )}
               </div>
               <p className="font-rajdhani text-xs text-muted-foreground">
-                © 2026 Warzone Warriors. Powered by Somnia.
+                © 2026 Warzone Warriors. Powered by <img src={zgLogo} alt="0G" className="inline h-5 w-auto align-middle mx-1" />.
                 {" "}
                 <Link
                   to="/game2"

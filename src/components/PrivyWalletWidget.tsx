@@ -5,17 +5,17 @@ import { usePrivyWalletTools } from '../hooks/usePrivyWalletTools';
 const buildChainForViem = (allowedChain) => {
   const rpcUrl =
     (Array.isArray(allowedChain.rpcUrls) && allowedChain.rpcUrls[0]) ||
-    'https://api.infra.mainnet.somnia.network';
+    'https://evmrpc.0g.ai';
 
   const nativeCurrency = allowedChain.nativeCurrency || {
-    name: 'Somnia',
-    symbol: 'SOMI',
+    name: '0G',
+    symbol: '0G',
     decimals: 18,
   };
 
   return {
     id: allowedChain.decimalChainId,
-    name: allowedChain.chainName || 'Somnia',
+    name: allowedChain.chainName || '0G Mainnet',
     nativeCurrency,
     rpcUrls: {
       default: { http: [rpcUrl] },
@@ -66,7 +66,7 @@ export const PrivyWalletWidget = () => {
         const client = createPublicClient({
           chain,
           transport: http(
-            chain.rpcUrls.default.http[0] || 'https://api.infra.mainnet.somnia.network'
+            chain.rpcUrls.default.http[0] || 'https://evmrpc.0g.ai'
           ),
         });
 
@@ -156,7 +156,7 @@ export const PrivyWalletWidget = () => {
   }
 
   const shortAddress = `${activeWallet.address.slice(0, 6)}...${activeWallet.address.slice(-4)}`;
-  const symbol = allowedChain?.nativeCurrency?.symbol || 'SOMI';
+  const symbol = allowedChain?.nativeCurrency?.symbol || '0G';
 
   const handleDragStart = (event) => {
     // On small mobile widths, keep the widget locked

@@ -2,17 +2,17 @@ import { useCallback, useMemo } from 'react';
 import { usePrivy, useWallets, useSendTransaction, useFundWallet } from '@privy-io/react-auth';
 import { getAllowedChainFromEnv } from '../lib/chain';
 
-// Fallback chain configuration for Somnia mainnet when env vars are not set
+// Fallback chain configuration for 0G mainnet when env vars are not set
 const FALLBACK_ALLOWED_CHAIN = {
-  caip2: 'eip155:5031',
-  decimalChainId: 5031,
-  hexChainId: '0x13a7',
-  chainName: 'Somnia Mainnet',
-  rpcUrls: ['https://api.infra.mainnet.somnia.network'],
-  blockExplorerUrls: ['https://explorer.somnia.network'],
+  caip2: 'eip155:16661',
+  decimalChainId: 16661,
+  hexChainId: '0x4115',
+  chainName: '0G Mainnet',
+  rpcUrls: ['https://evmrpc.0g.ai'],
+  blockExplorerUrls: ['https://chainscan.0g.ai'],
   nativeCurrency: {
-    name: 'Somnia',
-    symbol: 'SOMI',
+    name: '0G',
+    symbol: '0G',
     decimals: 18,
   },
 };
@@ -59,7 +59,7 @@ export const getPrimaryPrivyWallet = (user, wallets) => {
  * Exposes:
  *  - canUsePrivy: boolean (ready, authenticated, has wallet)
  *  - activeWallet: Privy wallet object with address
- *  - allowedChain: chain config (from env or Somnia fallback)
+ *  - allowedChain: chain config (from env or 0G fallback)
  *  - sendPrivyTransaction: raw useSendTransaction sender
  *  - openPrivyFunding: opens Privy's Add funds modal for the active wallet
  */

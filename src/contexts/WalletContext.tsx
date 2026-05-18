@@ -21,28 +21,29 @@ const trace = (...args: unknown[]) => {
   }
 };
 
-// Somnia Network Configuration (Mainnet)
-export const somniaTestnet = {
-  id: 5031,
-  name: 'Somnia',
-  network: 'somnia',
+// 0G Network Configuration (Mainnet)
+export const zgChain = {
+  id: 16661,
+  name: '0G Mainnet',
+  network: '0g',
   nativeCurrency: {
-    name: 'Somnia',
-    symbol: 'SOMI',
+    name: '0G',
+    symbol: '0G',
     decimals: 18,
   },
   rpcUrls: {
-    default: { http: ['https://api.infra.mainnet.somnia.network'] },
-    public: { http: ['https://api.infra.mainnet.somnia.network'] },
+    default: { http: ['https://evmrpc.0g.ai'] },
+    public: { http: ['https://evmrpc.0g.ai'] },
   },
   blockExplorers: {
-    default: { 
-      name: 'Somnia Explorer',
-      url: 'https://explorer.somnia.network/',
+    default: {
+      name: '0G Explorer',
+      url: 'https://chainscan.0g.ai',
     },
   },
   testnet: false,
 };
+
 
 // NFT Contract Addresses from environment variables
 console.log('Environment variables:', import.meta.env);
@@ -59,7 +60,7 @@ export type WalletContextValue = {
   setUserToken: (address: string) => Promise<unknown>;
   isNFTOwner: boolean;
   checkNFTOwnership: (walletAddress?: string | null) => Promise<boolean>;
-  switchToSomnia: () => Promise<boolean>;
+  switchTo0G: () => Promise<boolean>;
   playerProfile: any | null;
   profileLoading: boolean;
   refreshProfile: (walletAddress?: string | null) => Promise<any | null>;
@@ -73,7 +74,7 @@ const defaultWalletContext: WalletContextValue = {
   setUserToken: async () => null,
   isNFTOwner: false,
   checkNFTOwnership: async () => false,
-  switchToSomnia: async () => false,
+  switchTo0G: async () => false,
   playerProfile: null,
   profileLoading: false,
   refreshProfile: async () => null,
@@ -370,7 +371,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       
   //     // Create a public client for read operations
   //     const publicClient = createPublicClient({
-  //       chain: somniaTestnet,
+  //       chain: zgChain,
   //       transport: http('https://dream-rpc.somnia.network')
   //     });
 
@@ -401,7 +402,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   //       balance: balance.toString(),
   //       hasNFT,
   //       contractAddress: NFT_CONTRACT_ADDRESS,
-  //       chainId: somniaTestnet.id
+  //       chainId: zgChain.id
   //     });
       
   //     return hasNFT;
@@ -436,7 +437,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       ];
 
       const publicClient = createPublicClient({
-        chain: somniaTestnet,
+        chain: zgChain,
         transport: http('https://api.infra.mainnet.somnia.network'),
       });
 
@@ -469,7 +470,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         hasAnyNFT: hasNFT,
         contract1: NFT_CONTRACT_ADDRESS,
         contract2: NFT_CONTRACT_ADDRESS_2,
-        chainId: somniaTestnet.id,
+        chainId: zgChain.id,
       });
 
       return hasNFT;
@@ -487,17 +488,17 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
 
 
-  // Switch to Somnia network
-  const switchToSomnia = useCallback(async () => {
+  // Switch to 0G network
+  const switchTo0G = useCallback(async () => {
     // Never throw; return boolean so UI can gracefully proceed
     try {
-      if (chainId === somniaTestnet.id) return true;
+      if (chainId === zgChain.id) return true;
 
       try {
-        await switchChain({ chainId: somniaTestnet.id });
+        await switchChain({ chainId: zgChain.id });
         return true;
       } catch (switchError) {
-        console.error('Error switching to Somnia:', switchError);
+        console.error('Error switching to 0G:', switchError);
 
         if (switchError?.code === 4902) {
           try {
@@ -506,11 +507,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
               await injected.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: `0x${somniaTestnet.id.toString(16)}`,
-                  chainName: somniaTestnet.name,
-                  nativeCurrency: somniaTestnet.nativeCurrency,
-                  rpcUrls: [somniaTestnet.rpcUrls.public.http[0]],
-                  blockExplorerUrls: somniaTestnet.blockExplorers ? [somniaTestnet.blockExplorers.default.url] : []
+                  chainId: `0x${zgChain.id.toString(16)}`,
+                  chainName: zgChain.name,
+                  nativeCurrency: zgChain.nativeCurrency,
+                  rpcUrls: [zgChain.rpcUrls.public.http[0]],
+                  blockExplorerUrls: zgChain.blockExplorers ? [zgChain.blockExplorers.default.url] : []
                 }]
               });
               return true;
@@ -518,7 +519,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
             console.warn('No ethereum provider available to add chain.');
             return false;
           } catch (addError) {
-            console.error('Failed to add Somnia network:', addError);
+            console.error('Failed to add 0G network:', addError);
             return false;
           }
         }
@@ -530,7 +531,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
     } catch (error) {
-      console.error('Error in switchToSomnia (non-fatal):', error);
+      console.error('Error in switchTo0G (non-fatal):', error);
       return false;
     }
   }, [chainId, switchChain]);
@@ -702,19 +703,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [connectAsync, connectors, checkNFTOwnership]);
 
-  // Enforce Somnia network whenever connected or chain changes
+  // Enforce 0G network whenever connected or chain changes
   useEffect(() => {
-    const ensureSomnia = async () => {
+    const ensure0G = async () => {
       try {
-        if (wagmiIsConnected && chainId !== somniaTestnet.id) {
-          await switchToSomnia();
+        if (wagmiIsConnected && chainId !== zgChain.id) {
+          await switchTo0G();
         }
       } catch (e) {
-        console.warn('Enforcing Somnia network failed:', e);
+        console.warn('Enforcing 0G network failed:', e);
       }
     };
-    ensureSomnia();
-  }, [wagmiIsConnected, chainId, switchToSomnia]);
+    ensure0G();
+  }, [wagmiIsConnected, chainId, switchTo0G]);
 
   const sessionAddress = storedSession.walletAddress || null;
   const sessionConnected = Boolean(storedSession.walletAddress && storedSession.token);
@@ -742,7 +743,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         disconnect: handleDisconnect,
         isNFTOwner,
         checkNFTOwnership,
-        switchToSomnia,
+        switchTo0G,
         setUserToken,
         playerProfile,
         profileLoading,

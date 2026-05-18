@@ -136,11 +136,11 @@ const IapMarketplaceLayout = ({
       try {
         const rpcUrl =
           (Array.isArray(allowedChain.rpcUrls) && allowedChain.rpcUrls[0]) ||
-          'https://api.infra.mainnet.somnia.network';
+          'https://evmrpc.0g.ai';
         const chain = {
           id: allowedChain.decimalChainId,
-          name: allowedChain.chainName || 'Somnia',
-          nativeCurrency: { name: 'Somnia', symbol: 'SOMI', decimals: 18, ...allowedChain.nativeCurrency },
+          name: allowedChain.chainName || '0G Mainnet',
+          nativeCurrency: { name: '0G', symbol: '0G', decimals: 18, ...allowedChain.nativeCurrency },
           rpcUrls: { default: { http: [rpcUrl] }, public: { http: [rpcUrl] } },
         };
         const client = createPublicClient({ chain, transport: http(rpcUrl) });
@@ -172,7 +172,7 @@ const IapMarketplaceLayout = ({
   };
 
   const showFundsButton = canUsePrivy && !!activeWallet?.address;
-  const symbol = allowedChain?.nativeCurrency?.symbol || 'SOMI';
+  const symbol = allowedChain?.nativeCurrency?.symbol || '0G';
   const shortAddress = activeWallet?.address
     ? `${activeWallet.address.slice(0, 6)}...${activeWallet.address.slice(-4)}`
     : '';
@@ -473,7 +473,7 @@ const IapMarketplaceLayout = ({
                       <div className="rounded-2xl border border-white/8 bg-background/20 px-3 py-3">
                         <div className="font-russo text-[10px] tracking-widest text-muted-foreground mb-1">PRICE RANGE</div>
                         <div className="font-orbitron text-sm font-black text-foreground">
-                          {items[0]?.priceNumeric} - {items[items.length - 1]?.priceNumeric} SOMI
+                          {items[0]?.priceNumeric} - {items[items.length - 1]?.priceNumeric} 0G
                         </div>
                       </div>
                     </div>
@@ -608,7 +608,7 @@ const IapMarketplaceLayout = ({
                             <span className="hidden sm:block font-rajdhani text-xs text-muted-foreground">Price</span>
                             <div className="flex items-center gap-1 w-full sm:w-auto justify-center sm:justify-end">
                               <Zap className="w-3 h-3 text-gold" />
-                              <span className="font-orbitron font-bold text-gold text-xs sm:text-lg">{item.priceNumeric} SOMI</span>
+                              <span className="font-orbitron font-bold text-gold text-xs sm:text-lg">{item.priceNumeric} 0G</span>
                             </div>
                           </div>
                           <div className="hidden sm:flex items-center justify-between mb-2 text-[10px] font-russo tracking-widest text-muted-foreground">

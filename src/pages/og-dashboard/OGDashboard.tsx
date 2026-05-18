@@ -5,6 +5,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import { GameButton } from '@/components/ui/game-button';
 import { ArrowLeft, LogOut, RefreshCw, Shield, Activity, Wifi, Database, ChevronRight } from 'lucide-react';
 import * as api from '@/api/zerog';
+import zgLogo from '@/assets/0G-white-logo.png';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -218,7 +219,10 @@ export default function OGDashboard() {
                 <span className="text-gradient-gold">WARZONE</span>
                 <span className="text-foreground ml-1">WARRIORS</span>
               </div>
-              <div className="font-russo text-[9px] tracking-[0.2em] text-muted-foreground">0G NETWORK DASHBOARD</div>
+              <div className="flex items-center gap-1.5 font-russo text-[9px] tracking-[0.2em] text-muted-foreground">
+                <img src={zgLogo} alt="0G" className="h-8 w-auto opacity-80" />
+                <span>NETWORK DASHBOARD</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -254,7 +258,12 @@ export default function OGDashboard() {
             <Shield className="w-8 h-8 text-gold shrink-0" />
             <div className="flex-1">
               <div className="font-orbitron font-bold text-sm text-gold mb-1">
-                {authLoading ? 'Waiting for wallet signature...' : '0G Network Authentication Required'}
+                {authLoading ? 'Waiting for wallet signature...' : (
+                  <span className="flex items-center gap-2">
+                    <img src={zgLogo} alt="0G" className="h-9 w-auto" />
+                    Network Authentication Required
+                  </span>
+                )}
               </div>
               <p className="font-rajdhani text-sm text-muted-foreground">
                 {authLoading
@@ -286,7 +295,10 @@ export default function OGDashboard() {
                 <div className="font-mono text-xs text-foreground/80 break-all">{walletAddress || '—'}</div>
               </div>
               <div>
-                <div className="font-russo text-[9px] tracking-widest text-muted-foreground mb-0.5">0G SESSION</div>
+                <div className="flex items-center gap-1.5 font-russo text-[9px] tracking-widest text-muted-foreground mb-0.5">
+                  <img src={zgLogo} alt="0G" className="h-5 w-auto opacity-80" />
+                  <span>SESSION</span>
+                </div>
                 <div className={`font-russo text-xs font-semibold ${jwt ? 'text-green-400' : 'text-yellow-400'}`}>
                   {jwt ? 'Active — expires in 7 days' : 'Not authenticated'}
                 </div>
@@ -556,7 +568,9 @@ export default function OGDashboard() {
             <div className="rounded-xl border border-border bg-card/40 p-8 text-center">
               <div className="inline-flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-gold animate-pulse" />
-                <span className="font-russo text-xs tracking-widest text-gold">LOADING 0G DATA</span>
+                <span className="font-russo text-xs tracking-widest text-gold flex items-center gap-2">
+                  LOADING <img src={zgLogo} alt="0G" className="h-8 w-auto" /> DATA
+                </span>
               </div>
             </div>
           )}

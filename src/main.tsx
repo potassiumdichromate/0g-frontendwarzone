@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { PrivyProvider, type PrivyClientConfig } from '@privy-io/react-auth';
-import { config, somniaChain } from './wagmi.config';
+import { config, zgChain } from './wagmi.config';
 import { getPrivyAppId } from './lib/privyEnv';
 import { PRIVY_WALLET_LIST } from './lib/privyWalletList';
 import './index.css';
@@ -45,8 +45,8 @@ export const privyConfig: PrivyClientConfig = {
       }
     : {}),
   loginMethods: ['wallet', 'email', 'google'],
-  supportedChains: [somniaChain],
-  defaultChain: somniaChain,
+  supportedChains: [zgChain],
+  defaultChain: zgChain,
   intl: {
     defaultCountry: 'US',
   },
