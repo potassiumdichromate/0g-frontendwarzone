@@ -9,9 +9,8 @@ import {
 } from 'react';
 import { useAccount, useDisconnect, useConnect, useSwitchChain, useChainId, useConnectors } from 'wagmi';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { getPlayerProfile, loginUser } from '../utils/api';
+import { getPlayerProfile, getPlayerName, loginUser } from '../utils/api';
 import { createPublicClient, http } from 'viem';
-import { buildApiUrl } from '../config/api';
 import { getStableInjectedProvider } from '../lib/injectedEthereum';
 
 const DEBUG_LOGIN_TRACE = String(import.meta.env.VITE_DEBUG_LOGIN_TRACE || '').toLowerCase() === 'true';
@@ -536,18 +535,11 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [chainId, switchChain]);
 
-  const checkPlayerName = useCallback(async (walletAddress) => {
+  const checkPlayerName = useCallback(async (walletAddress: string) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return null;
-      
-      const response = await fetch(buildApiUrl(`/name?walletAddress=${walletAddress}`), {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      return await response.json();
+      return await getPlayerName(walletAddress);
     } catch (error) {
       console.error('Error checking player name:', error);
       return null;
@@ -579,9 +571,23 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setUserTokenLockRef.current = normalizedAddr;
-      console.log('[WalletContext] setUserToken: calling /login for', _address);
+      console.log('[WalletContext] setUserToken: auth nonce+signature for', _address);
 
-      const loginResult = await loginUser(_address);
+      let provider: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } | null =
+        getStableInjectedProvider() as typeof provider;
+      const privyWallet = Array.isArray(privyWallets) ? privyWallets[0] : null;
+      if (privyWallet && typeof privyWallet.getEthereumProvider === 'function') {
+        try {
+          provider = (await privyWallet.getEthereumProvider()) as typeof provider;
+        } catch {
+          /* fall back to injected */
+        }
+      }
+      if (!provider && typeof window !== 'undefined') {
+        provider = (window as Window & { ethereum?: typeof provider }).ethereum ?? null;
+      }
+
+      const loginResult = await loginUser(_address, provider);
       if (loginResult.token) {
         localStorage.setItem('token', loginResult.token);
         localStorage.setItem('walletAddress', _address);
@@ -597,7 +603,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setUserTokenLockRef.current = null;
     }
-  }, [checkPlayerName, refreshProfile]);
+  }, [checkPlayerName, refreshProfile, privyWallets]);
 
   // When a Privy session is authenticated, mirror it into our wallet state.
   // Deps are kept minimal — privyUser/privyWallets change references every render,

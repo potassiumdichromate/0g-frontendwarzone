@@ -4,10 +4,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { usePrivy } from "@privy-io/react-auth";
 import { useScrollAnimations, gsap } from "@/hooks/useGSAP";
 import { GameButton } from "@/components/ui/game-button";
-import { Trophy, ShoppingCart, ArrowRight, Play, ChevronDown, Map, Users, Shield, Menu, X, Swords, Zap, Star, Lock, Crosshair, Crown, CalendarDays, Copy, Check, LogOut, Wallet, LayoutDashboard } from "lucide-react";
+import { Trophy, ShoppingCart, ArrowRight, Play, ChevronDown, Map, Users, Shield, Menu, X, Swords, Zap, Star, Lock, Crosshair, Crown, CalendarDays, Copy, Check, LogOut, Wallet, LayoutDashboard, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useWallet } from "@/contexts/WalletContext";
-import { getTournaments } from "@/utils/api";
+import { HARDCODED_TOURNAMENTS } from "@/constants/tournaments";
+import { WARRIOR_CHARACTERS } from "@/constants/characters";
 
 import iconCoins from "@/assets/icon-coins.png";
 import iconGems from "@/assets/icon-gems.png";
@@ -37,17 +38,17 @@ const topPlayers = [
   { rank: 5, name: "Fate", coins: 2200781 },
 ];
 
-const NAV_SECTIONS = ["home", "leaderboard", "marketplace"] as const;
+const NAV_SECTIONS = ["home", "leaderboard", "tournaments", "marketplace"] as const;
 type Section = typeof NAV_SECTIONS[number];
-const NAV_LABELS: Record<Section, string> = { home: "HOME", leaderboard: "LEADERBOARD", marketplace: "STORE" };
+const NAV_LABELS: Record<Section, string> = {
+  home: "HOME",
+  leaderboard: "LEADERBOARD",
+  tournaments: "TOURNAMENT",
+  marketplace: "STORE",
+};
 
-/** Top bar order: Home → Leaderboard → Tournament → Store */
-const TOP_NAV_ORDER: Array<{ type: "hash"; section: Section } | { type: "tournament" }> = [
-  { type: "hash", section: "home" },
-  { type: "hash", section: "leaderboard" },
-  { type: "tournament" },
-  { type: "hash", section: "marketplace" },
-];
+/** Top bar order: Home → Leaderboard → Tournament (section) → Store */
+const TOP_NAV_ORDER: Section[] = ["home", "leaderboard", "tournaments", "marketplace"];
 
 const MARQUEE_ITEMS = ["CAMPAIGN", "ARMORY", "CHARACTERS", "BATTLE", "EARN", "UPGRADE", "DOMINATE", "CONQUER"];
 
@@ -60,8 +61,12 @@ export function HomePage() {
   const location = useLocation();
   const openLogin = () => navigate('/login', { state: { from: location.pathname } });
   const privyConfigured = Boolean(import.meta.env.VITE_PRIVY_APP_ID);
-  const [homeTournaments, setHomeTournaments] = useState<any[]>([]);
-  const [tournamentsLoading, setTournamentsLoading] = useState(true);
+  const homeTournaments = HARDCODED_TOURNAMENTS.slice(0, 3).map((item, idx) => ({
+    ...item,
+    image: item.image || [soldierCard, soldierCardTwo, soldierCardThree][idx % 3],
+  }));
+  const tournamentsLoading = false;
+  const [currentCharIdx, setCurrentCharIdx] = useState(0);
   const [copied, setCopied] = useState(false);
 
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
@@ -79,22 +84,6 @@ export function HomePage() {
       console.error("Failed to copy wallet address:", error);
     }
   };
-
-  // Fetch tournaments for homepage preview
-  useEffect(() => {
-    getTournaments()
-      .then((data) => {
-        const raw: any[] = data?.body?.data ?? [];
-        const FALLBACK_IMGS = [soldierCard, soldierCardTwo, soldierCardThree];
-        const normalized = raw.map((item: any, idx: number) => ({
-          ...item,
-          image: item.image || FALLBACK_IMGS[idx % FALLBACK_IMGS.length],
-        }));
-        setHomeTournaments(normalized.slice(0, 3));
-      })
-      .catch(() => {})
-      .finally(() => setTournamentsLoading(false));
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -161,31 +150,21 @@ export function HomePage() {
               </Link>
 
               <div className="hidden md:flex items-center gap-1">
-                {TOP_NAV_ORDER.map((item) =>
-                  item.type === "hash" ? (
-                    <a
-                      key={item.section}
-                      href={`#${item.section}`}
-                      className={`relative font-russo text-[11px] tracking-wider px-4 py-2 transition-all ${
-                        activeSection === item.section ? "text-gold" : "text-muted-foreground hover:text-gold"
-                      }`}
-                    >
-                      {NAV_LABELS[item.section]}
-                      {activeSection === item.section && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-[2px] bg-gold rounded-full" />
-                      )}
-                    </a>
-                  ) : (
-                    <Link
-                      key="tournament"
-                      to="/tournament"
-                      className="relative font-russo text-[11px] tracking-wider px-4 py-2 transition-all text-muted-foreground hover:text-gold inline-flex items-center gap-2"
-                    >
-                      <Crosshair className="w-3.5 h-3.5" />
-                      TOURNAMENT
-                    </Link>
-                  ),
-                )}
+                {TOP_NAV_ORDER.map((section) => (
+                  <a
+                    key={section}
+                    href={`#${section}`}
+                    className={`relative font-russo text-[11px] tracking-wider px-4 py-2 transition-all inline-flex items-center gap-2 ${
+                      activeSection === section ? "text-gold" : "text-muted-foreground hover:text-gold"
+                    }`}
+                  >
+                    {section === "tournaments" && <Crosshair className="w-3.5 h-3.5" />}
+                    {NAV_LABELS[section]}
+                    {activeSection === section && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-[2px] bg-gold rounded-full" />
+                    )}
+                  </a>
+                ))}
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
@@ -242,30 +221,19 @@ export function HomePage() {
             {mobileMenuOpen && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="md:hidden border-t border-border bg-card/80 backdrop-blur-md">
                 <div className="px-4 py-3 space-y-1">
-                  {TOP_NAV_ORDER.map((item) =>
-                    item.type === "hash" ? (
-                      <a
-                        key={item.section}
-                        href={`#${item.section}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`block px-3 py-2.5 rounded-lg font-russo text-sm transition-all ${
-                          activeSection === item.section ? "text-gold bg-gold/10" : "text-muted-foreground"
-                        }`}
-                      >
-                        {NAV_LABELS[item.section]}
-                      </a>
-                    ) : (
-                      <Link
-                        key="tournament"
-                        to="/tournament"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg font-russo text-sm transition-all text-muted-foreground hover:text-gold"
-                      >
-                        <Crosshair className="w-4 h-4" />
-                        TOURNAMENT
-                      </Link>
-                    ),
-                  )}
+                  {TOP_NAV_ORDER.map((section) => (
+                    <a
+                      key={section}
+                      href={`#${section}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-lg font-russo text-sm transition-all ${
+                        activeSection === section ? "text-gold bg-gold/10" : "text-muted-foreground"
+                      }`}
+                    >
+                      {section === "tournaments" && <Crosshair className="w-4 h-4" />}
+                      {NAV_LABELS[section]}
+                    </a>
+                  ))}
 
                   <div className="pt-4 mt-3 border-t border-gold/15">
                     {isConnected ? (
@@ -613,57 +581,123 @@ export function HomePage() {
             <div className="absolute inset-0 bg-background/65" />
           </div>
           <div className="absolute inset-0 z-0" style={{ background: "radial-gradient(ellipse at 30% 50%, hsl(28,100%,50%,0.08) 0%, transparent 60%)" }} />
+          <button
+            type="button"
+            onClick={() => setCurrentCharIdx((prev) => (prev === 0 ? WARRIOR_CHARACTERS.length - 1 : prev - 1))}
+            className="hidden sm:flex absolute left-[clamp(0.75rem,2vw,2.5rem)] top-1/2 -translate-y-1/2 z-20 h-[clamp(2.25rem,3.2vw,3rem)] w-[clamp(2.25rem,3.2vw,3rem)] items-center justify-center rounded-full bg-card/60 hover:bg-gold/20 border border-border transition-colors text-gold"
+            aria-label="Previous warrior"
+          >
+            <ChevronLeft className="h-[clamp(1.1rem,1.6vw,1.5rem)] w-[clamp(1.1rem,1.6vw,1.5rem)]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentCharIdx((prev) => (prev === WARRIOR_CHARACTERS.length - 1 ? 0 : prev + 1))}
+            className="hidden sm:flex absolute right-[clamp(0.75rem,2vw,2.5rem)] top-1/2 -translate-y-1/2 z-20 h-[clamp(2.25rem,3.2vw,3rem)] w-[clamp(2.25rem,3.2vw,3rem)] items-center justify-center rounded-full bg-card/60 hover:bg-gold/20 border border-border transition-colors text-gold"
+            aria-label="Next warrior"
+          >
+            <ChevronRight className="h-[clamp(1.1rem,1.6vw,1.5rem)] w-[clamp(1.1rem,1.6vw,1.5rem)]" />
+          </button>
           <div className="container mx-auto px-4 relative z-10">
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 max-w-5xl mx-auto">
-              <motion.div data-gsap="fade-left" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                className="flex-shrink-0 relative"
+            <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-5 sm:gap-4 md:gap-6 lg:gap-8 max-w-6xl mx-auto relative">
+              <motion.div
+                data-gsap="fade-left"
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative w-full h-[300px] sm:h-[360px] md:h-[420px] lg:h-[480px] flex justify-center items-center"
               >
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-8 rounded-full bg-gold/20 blur-xl" />
-                <motion.img src={soldierCard} alt="Handsome Man" className="w-48 sm:w-64 md:w-72 drop-shadow-2xl relative z-10"
-                  animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }}
-                  style={{ filter: "drop-shadow(0 20px 40px hsl(28,100%,50%,0.3))" }}
-                  loading="lazy"
-                />
+                <div className="relative">
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-8 rounded-full bg-gold/20 blur-xl" />
+                  <motion.img
+                    key={currentCharIdx}
+                    src={WARRIOR_CHARACTERS[currentCharIdx].image}
+                    alt={WARRIOR_CHARACTERS[currentCharIdx].name}
+                    className="w-52 sm:w-56 md:w-64 lg:w-80 drop-shadow-2xl relative z-10"
+                    initial={{ opacity: 0, scale: WARRIOR_CHARACTERS[currentCharIdx].scale * 0.9 }}
+                    animate={{ opacity: 1, scale: WARRIOR_CHARACTERS[currentCharIdx].scale, y: [0, -10, 0] }}
+                    transition={{ opacity: { duration: 0.3 }, scale: { duration: 0.3 }, y: { duration: 3, repeat: Infinity } }}
+                    style={{ filter: "drop-shadow(0 20px 40px hsl(28,100%,50%,0.3))" }}
+                    loading="lazy"
+                  />
+                </div>
               </motion.div>
-              <motion.div data-gsap="fade-right" initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <motion.div
+                data-gsap="fade-right"
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="w-full min-w-0 text-center sm:text-left"
+              >
                 <p className="font-russo text-xs tracking-[0.3em] text-gold mb-2">MEET YOUR WARRIOR</p>
-                <h2 className="font-orbitron text-3xl sm:text-4xl md:text-5xl font-black text-foreground mb-4">
-                  HANDSOME <span className="text-gradient-gold">MAN</span>
-                </h2>
-                <p className="font-rajdhani text-base sm:text-lg text-muted-foreground mb-6 max-w-md leading-relaxed">
-                  The original warrior. Equipped with a trusty pistol, red bandana, and unstoppable attitude. 
-                  Unlock Shadow Dancer and Oldman Tracer as you progress.
-                </p>
-                
-                {/* Stat bars like the armory screen */}
-                <div className="space-y-3 mb-6 max-w-xs">
-                  {[
-                    { label: "DAMAGE", value: 65, color: "hsl(28,100%,50%)" },
-                    { label: "SPEED", value: 80, color: "hsl(42,100%,50%)" },
-                    { label: "DEFENSE", value: 45, color: "hsl(100,40%,35%)" },
-                  ].map(stat => (
+                <motion.h2
+                  key={`title-${currentCharIdx}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="font-orbitron text-3xl sm:text-[2rem] md:text-4xl lg:text-5xl font-black text-foreground mb-4"
+                >
+                  {WARRIOR_CHARACTERS[currentCharIdx].titleBase}{" "}
+                  <span className="text-gradient-gold">{WARRIOR_CHARACTERS[currentCharIdx].titleHighlight}</span>
+                </motion.h2>
+                <motion.p
+                  key={`desc-${currentCharIdx}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="font-rajdhani text-base sm:text-lg text-muted-foreground mb-6 max-w-md mx-auto sm:mx-0 leading-relaxed min-h-16"
+                >
+                  {WARRIOR_CHARACTERS[currentCharIdx].description}
+                </motion.p>
+
+                <div className="space-y-3 mb-6 max-w-xs sm:max-w-sm mx-auto sm:mx-0">
+                  {WARRIOR_CHARACTERS[currentCharIdx].stats.map((stat) => (
                     <div key={stat.label}>
                       <div className="flex justify-between mb-1">
                         <span className="font-russo text-[10px] text-muted-foreground">{stat.label}</span>
                         <span className="font-orbitron text-[10px] text-gold">{stat.value}%</span>
                       </div>
                       <div className="h-2 rounded-full bg-muted/50 overflow-hidden border border-border/50">
-                        <motion.div initial={{ width: 0 }} whileInView={{ width: `${stat.value}%` }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.3 }}
-                          className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${stat.color}, ${stat.color}80)`, boxShadow: `0 0 8px ${stat.color}60` }} />
+                        <motion.div
+                          key={`stat-${currentCharIdx}-${stat.label}`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${stat.value}%` }}
+                          transition={{ duration: 1 }}
+                          className="h-full rounded-full"
+                          style={{
+                            background: `linear-gradient(90deg, ${stat.color}, ${stat.color}80)`,
+                            boxShadow: `0 0 8px ${stat.color}60`,
+                          }}
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex gap-3 mb-6">
-                  {["Shadow Dancer", "Oldman Tracer"].map(name => (
-                    <div key={name} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card/40">
+                <div className="flex flex-wrap justify-center sm:justify-start gap-3 mb-6 min-h-[36px]">
+                  {WARRIOR_CHARACTERS[currentCharIdx].locks.map((name) => (
+                    <motion.div
+                      key={`lock-${currentCharIdx}-${name}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card/40"
+                    >
                       <Lock className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="font-rajdhani text-xs text-muted-foreground">{name}</span>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
 
+                <div className="flex justify-center sm:justify-start gap-2">
+                  {WARRIOR_CHARACTERS.map((char, idx) => (
+                    <button
+                      key={char.name}
+                      type="button"
+                      onClick={() => setCurrentCharIdx(idx)}
+                      className={`h-2 rounded-full transition-all ${
+                        idx === currentCharIdx ? "w-8 bg-gold" : "w-2 bg-muted-foreground/40 hover:bg-gold/50"
+                      }`}
+                      aria-label={`Show ${char.name}`}
+                    />
+                  ))}
+                </div>
               </motion.div>
             </div>
           </div>
@@ -788,9 +822,8 @@ export function HomePage() {
                   return (
                     <motion.div key={String(t.id)} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                       whileHover={{ y: -8, scale: 1.02 }}
-                      className="group cursor-pointer"
+                      className="group"
                     >
-                      <Link to="/tournament">
                         <div className={`rounded-2xl overflow-hidden border transition-all duration-300 ${
                           isLive
                             ? "border-gold/45 shadow-[0_0_35px_rgba(255,198,71,0.18)]"
@@ -842,12 +875,11 @@ export function HomePage() {
                               </div>
                             </div>
                             <div className="flex items-center justify-between border-t border-border/50 pt-3">
-                              <span className="font-rajdhani text-xs text-muted-foreground">View details</span>
-                              <ArrowRight className="w-4 h-4 text-gold group-hover:translate-x-1 transition-transform" />
+                              <span className="font-rajdhani text-xs text-muted-foreground">Live on home</span>
+                              <Crown className="w-4 h-4 text-gold opacity-70" />
                             </div>
                           </div>
                         </div>
-                      </Link>
                     </motion.div>
                   );
                 })}
@@ -950,25 +982,15 @@ export function HomePage() {
                 <span className="font-orbitron font-bold text-sm text-gradient-gold">WARZONE WARRIORS</span>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-                {TOP_NAV_ORDER.map((item) =>
-                  item.type === "hash" ? (
-                    <a
-                      key={item.section}
-                      href={`#${item.section}`}
-                      className="font-russo text-[10px] tracking-wider text-muted-foreground hover:text-gold transition-colors"
-                    >
-                      {NAV_LABELS[item.section]}
-                    </a>
-                  ) : (
-                    <Link
-                      key="tournament"
-                      to="/tournament"
-                      className="font-russo text-[10px] tracking-wider text-muted-foreground hover:text-gold transition-colors"
-                    >
-                      TOURNAMENT
-                    </Link>
-                  ),
-                )}
+                {TOP_NAV_ORDER.map((section) => (
+                  <a
+                    key={section}
+                    href={`#${section}`}
+                    className="font-russo text-[10px] tracking-wider text-muted-foreground hover:text-gold transition-colors"
+                  >
+                    {NAV_LABELS[section]}
+                  </a>
+                ))}
               </div>
               <p className="font-rajdhani text-xs text-muted-foreground">
                 © 2026 Warzone Warriors. Powered by <img src={zgLogo} alt="0G" className="inline h-5 w-auto align-middle mx-1" />.

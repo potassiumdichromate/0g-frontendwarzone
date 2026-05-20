@@ -28,6 +28,9 @@ import gun105Image from '../../assets/images/gun105.png';
 import gun106Image from '../../assets/images/gun106.png';
 import gun107Image from '../../assets/images/gun107.png';
 import gun108Image from '../../assets/images/gun108.png';
+import soldierCardImage from '../../assets/soldier-card-1-clean.png';
+import characterTwoImage from '../../assets/character2.png';
+import characterThreeImage from '../../assets/character3.png';
 import './iap.css';
 import { getMarketplacePurchaseStatus, getPlayerProfile, updateMarketplaceData } from '../../utils/api';
 import { useAccount, useChainId, useWaitForTransactionReceipt, useWalletClient } from 'wagmi';
@@ -131,8 +134,27 @@ const IAP_GUNS_DATA = [
   { id: 108, image: gun108Image, detailImage: gun108Image, name: 'Flame Thrower', value: 'Flame Thrower', type: 'Guns' as const },
 ];
 
+const IAP_WARRIORS_DATA = [
+  { id: 1, image: soldierCardImage, detailImage: soldierCardImage, name: 'Handsome Man', value: 'Handsome Man', price: 'FREE', type: 'Warriors' as const, owned: true },
+  { id: 2, image: characterTwoImage, detailImage: characterTwoImage, name: 'Shadow Dancer', value: 'Shadow Dancer', price: '5', type: 'Warriors' as const, owned: false },
+  { id: 3, image: characterThreeImage, detailImage: characterThreeImage, name: 'Oldman Tracer', value: 'Oldman Tracer', price: '7.5', type: 'Warriors' as const, owned: false },
+];
+
 function buildItemsByCategory(ownedGuns: string[]): Record<IapMarketCategory, IapMarketDisplayItem[]> {
   const gunOwned = (v: string) => ownedGuns.includes(String(v));
+  const warriors = IAP_WARRIORS_DATA.map((item, i) => ({
+    id: item.id,
+    name: item.name,
+    amountLabel: item.value,
+    priceNumeric: item.price,
+    rarity: item.owned ? 'COMMON' : RARITY_CYCLE[(i + 2) % RARITY_CYCLE.length],
+    popular: item.owned,
+    image: item.image,
+    detailImage: item.detailImage,
+    iapType: item.type,
+    iapValue: item.value,
+    owned: item.owned,
+  }));
   const coins = IAP_COINS_DATA.map((item, i) => ({
     id: item.id,
     name: item.name,
@@ -172,7 +194,7 @@ function buildItemsByCategory(ownedGuns: string[]): Record<IapMarketCategory, Ia
     iapValue: item.value,
     owned: gunOwned(item.value),
   }));
-  return { coins, gems, guns };
+  return { warriors, coins, gems, guns };
 }
 
 const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {

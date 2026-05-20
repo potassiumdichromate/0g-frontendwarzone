@@ -23,6 +23,7 @@ interface ImportMetaEnv {
   readonly VITE_APP_NFT_CONTRACT_ADDRESS?: string
   readonly VITE_APP_NFT_CONTRACT_ADDRESS_2?: string
   readonly VITE_API_BASE_URL?: string
+  readonly VITE_API_ORIGIN?: string
   readonly VITE_GAME_URL?: string
   readonly VITE_GAME_MANUAL_URL?: string
   readonly VITE_ALLOWED_CHAIN_ID?: string
