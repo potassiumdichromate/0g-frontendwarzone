@@ -6,6 +6,17 @@ import centerImage from "../../assets/images/abc1.png";
 import topRightImage from "../../assets/images/Frame 74.png";
 import topRightAdditionalImage from "../../assets/images/image 32.png";
 
+const GAME_BASE_URL = 'https://warzonewarriors.xyz/game';
+const ZG_JWT_KEY = 'ZGJwt';
+
+function buildGameUrl(walletAddress: string | null): string {
+  if (!walletAddress) return GAME_BASE_URL;
+  let url = `${GAME_BASE_URL}?walletAddress=${encodeURIComponent(walletAddress)}`;
+  const jwt = localStorage.getItem(ZG_JWT_KEY);
+  if (jwt) url += `&jwt=${encodeURIComponent(jwt)}`;
+  return url;
+}
+
 export const Game = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showIframe, setShowIframe] = useState(false);
@@ -13,51 +24,35 @@ export const Game = () => {
   const loadedRef = useRef(false);
   const iframeRef = useRef(null);
   const navigate = useNavigate();
-  const { isConnected, isNFTOwner, checkNFTOwnership, address } = useWallet();
+  const { isConnected, checkNFTOwnership, address } = useWallet();
   const hasRunRef = useRef(false);
 
-  // Simple page logger
+  const walletAddress = address || localStorage.getItem('walletAddress');
+
   const log = (...args) => console.log('[Game]', new Date().toISOString(), ...args);
 
-  const navigateToHome = () => {
-    navigate('/');
-  };
-
-  const navigateToLeaderboard = () => {
-    navigate("/leaderboard");
-  };
-
   useEffect(() => {
-    log('mount/useEffect start', { isConnected, address });
+    log('mount/useEffect start', { isConnected, walletAddress });
     const verifyAccess = async () => {
-      log('verifyAccess called');
-      if (!isConnected) {
+      if (!isConnected && !walletAddress) {
         log('not connected -> redirect home');
         alert('Please connect your wallet first');
-        navigateToHome();
+        navigate('/');
         return;
       }
       setShowIframe(true);
       log('setShowIframe(true)');
 
-      // Do not block on network/NFT checks; show game ASAP
       try {
-        // Optional: still trigger ownership check in background (non-blocking)
-        await checkNFTOwnership(address);
+        await checkNFTOwnership(walletAddress);
         log('background NFT check invoked');
       } catch (err) {
-        console.warn('[Game]', 'Non-fatal: NFT check failed. Proceeding to game.', err);
+        console.warn('[Game]', 'Non-fatal: NFT check failed.', err);
       }
 
-      // Show the iframe immediately
-
-      // Fallback: if iframe does not fire onLoad (e.g., X-Frame-Options),
-      // remove the loading screen after a short timeout to not block UX
       const fallback = setTimeout(() => {
         log('fallback fired (6000ms)', { loaded: loadedRef.current });
-        if (!loadedRef.current) {
-          setIframeFailed(true);
-        }
+        if (!loadedRef.current) setIframeFailed(true);
         setIsLoading(false);
       }, 6000);
       log('fallback timer set (6000ms)');
@@ -68,6 +63,7 @@ export const Game = () => {
     if (hasRunRef.current) { log('effect already ran, skipping'); return; }
     hasRunRef.current = true;
     verifyAccess();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleIframeLoad = () => {
@@ -77,14 +73,16 @@ export const Game = () => {
     setIframeFailed(false);
   };
 
+  const gameUrl = buildGameUrl(walletAddress);
+
   return (
     <div className="game-container">
       {isLoading && (
         <div className="loading-background" style={{display:'flex'}}>
           <div className="center-image">
-            <img 
-              src={centerImage} 
-              alt="Game Center Piece" 
+            <img
+              src={centerImage}
+              alt="Game Center Piece"
               className="center-image-content"
             />
           </div>
@@ -93,15 +91,15 @@ export const Game = () => {
           </div>
           <div className="top-right-container">
             <div className="top-right-image">
-              <img 
-                src={topRightImage} 
+              <img
+                src={topRightImage}
                 alt="Top Right Decoration"
                 className="top-image"
               />
             </div>
             <div className="top-right-additional">
-              <img 
-                src={topRightAdditionalImage} 
+              <img
+                src={topRightAdditionalImage}
                 alt="Additional Decoration"
                 className="top-image"
               />
@@ -109,11 +107,11 @@ export const Game = () => {
           </div>
         </div>
       )}
-      
+
       {showIframe && (
         <iframe
           ref={iframeRef}
-          src={"https://warzonewarriors.xyz/game"}
+          src={gameUrl}
           title="Game Content"
           className={`game-iframe ${!isLoading ? 'loaded' : ''}`}
           onLoad={handleIframeLoad}
@@ -122,21 +120,8 @@ export const Game = () => {
           allowFullScreen
         />
       )}
-      
-      <div className={`game-buttons ${!isLoading ? 'hidden' : ''}`}>
-        {/* <button 
-          onClick={navigateToHome} 
-          className="nav-button"
-        >
-          Go Back
-        </button>
-        <button 
-          onClick={navigateToLeaderboard} 
-          className="nav-button"
-        >
-          Leaderboard
-        </button> */}
-      </div>
+
+      <div className={`game-buttons ${!isLoading ? 'hidden' : ''}`} />
     </div>
   );
 };
