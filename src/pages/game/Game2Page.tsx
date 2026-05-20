@@ -7,19 +7,17 @@ import { buildApiUrl } from '../../config/api';
 import { Home, Maximize2, MessageCircle, X } from 'lucide-react';
 import centerImage from "../../assets/images/abc1.png";
 import gameBackground from '../../assets/hero-web3.png';
-import ThemedBackButton from '../../components/ThemedBackButton';
-import { useSignMessage } from 'wagmi';
 
-// ── 0G WarzoneWarrior backend ──────────────────────────────────────────────
-const ZG_BACKEND = 'https://zerog-warzonewarriors.onrender.com';
 const ZG_JWT_KEY = 'ZGJwt';
 
-function isJwtExpired(token: string): boolean {
+function getCachedJwt(): string | null {
   try {
+    const token = localStorage.getItem(ZG_JWT_KEY);
+    if (!token) return null;
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return Date.now() >= (payload.exp * 1000) - 5 * 60 * 1000;
+    return Date.now() < (payload.exp * 1000) - 5 * 60 * 1000 ? token : null;
   } catch {
-    return true;
+    return null;
   }
 }
 
@@ -29,7 +27,7 @@ export const Game2 = () => {
   const [isLoading, setIsLoading]   = useState(true);
   const [showIframe, setShowIframe] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [zgJwt, setZgJwt] = useState<string | null>(null);
+  const [zgJwt, setZgJwt] = useState<string | null>(getCachedJwt);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
 
@@ -41,40 +39,10 @@ export const Game2 = () => {
 
   const navigate = useNavigate();
   const { isConnected, address } = useWallet();
-  const { signMessageAsync } = useSignMessage();
+
 
   const walletAddress = address || localStorage.getItem('walletAddress');
   const activeRoundIdRef = useRef(null);
-
-  // ── 0G SIWE auth ─────────────────────────────────────────────────────────
-
-  const doZGAuth = useCallback(async (wallet: string): Promise<string | null> => {
-    const cached = localStorage.getItem(ZG_JWT_KEY);
-    if (cached && !isJwtExpired(cached)) return cached;
-
-    try {
-      const nonceRes = await fetch(`${ZG_BACKEND}/auth/nonce?wallet=${encodeURIComponent(wallet)}`);
-      if (!nonceRes.ok) throw new Error(`Nonce fetch failed: ${nonceRes.status}`);
-      const { nonce, message } = await nonceRes.json();
-
-      const signature = await signMessageAsync({ message });
-
-      const loginRes = await fetch(`${ZG_BACKEND}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet, signature, nonce }),
-      });
-      if (!loginRes.ok) throw new Error(`Login failed: ${loginRes.status}`);
-      const { token } = await loginRes.json();
-      if (!token) throw new Error('No token in response');
-
-      localStorage.setItem(ZG_JWT_KEY, token);
-      return token;
-    } catch (err) {
-      console.warn('[Game2] 0G auth skipped (non-fatal):', (err as Error).message);
-      return null;
-    }
-  }, [signMessageAsync]);
 
   // ── GAME_OVER postMessage → submit score ──────────────────────────────────
 
@@ -202,28 +170,13 @@ export const Game2 = () => {
       return;
     }
 
-    let cancelled = false;
-    let fallback: ReturnType<typeof setTimeout> | null = null;
-
-    (async () => {
-      let jwt: string | null = null;
-      if (walletAddress) {
-        jwt = await doZGAuth(walletAddress);
-        if (!cancelled && jwt) setZgJwt(jwt);
-      }
-
-      if (!cancelled) {
-        setGameUrl(buildGameUrl(jwt));
-        setShowIframe(true);
-        fallback = setTimeout(() => setIsLoading(false), 6000);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (fallback) clearTimeout(fallback);
-    };
-  }, [isConnected, walletAddress, navigate, doZGAuth, buildGameUrl]);
+    const jwt = getCachedJwt();
+    if (jwt) setZgJwt(jwt);
+    setGameUrl(buildGameUrl(jwt));
+    setShowIframe(true);
+    const fallback = setTimeout(() => setIsLoading(false), 6000);
+    return () => clearTimeout(fallback);
+  }, [isConnected, walletAddress, navigate, buildGameUrl]);
 
   const handleIframeLoad = () => {
     loadedRef.current = true;
