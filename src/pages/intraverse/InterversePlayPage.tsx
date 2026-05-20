@@ -46,7 +46,7 @@ function RoundsModal({ tournament, onClose }) {
   const statusColor = state.isActive
     ? { pill: 'bg-amber-400 text-black', dot: 'bg-black', label: 'LIVE NOW' }
     : state.isPast
-    ? { pill: 'border border-white/15 bg-white/5 text-white/40', dot: '', label: 'ENDED' }
+    ? { pill: 'border border-red-500/50 bg-red-500/15 text-red-400', dot: '', label: 'ENDED', glow: '0 0 12px rgba(239,68,68,0.3)' }
     : { pill: 'border border-sky-400/30 bg-sky-500/10 text-sky-300', dot: 'bg-sky-400', label: 'UPCOMING' };
 
   return (
@@ -82,7 +82,7 @@ function RoundsModal({ tournament, onClose }) {
           {/* status badge */}
           <div className="absolute top-4 left-4">
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-russo tracking-[0.3em] font-bold ${statusColor.pill}`}
-              style={state.isActive ? { boxShadow: '0 0 18px rgba(245,158,11,0.55)' } : {}}>
+              style={state.isActive ? { boxShadow: '0 0 18px rgba(245,158,11,0.55)' } : state.isPast ? { boxShadow: statusColor.glow } : {}}>
               {(state.isActive || state.isUpcoming) && <span className={`w-1.5 h-1.5 rounded-full ${statusColor.dot} ${state.isActive ? 'animate-pulse' : ''}`} />}
               {statusColor.label}
             </div>

@@ -112,15 +112,6 @@ export function TournamentCard({
             }`}
           />
 
-          {state.isPast && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="px-4 py-2 rounded-xl border border-white/10 bg-black/55 backdrop-blur-sm">
-                <span className="font-russo text-[10px] tracking-[0.35em] text-white/50 uppercase">
-                  Concluded
-                </span>
-              </div>
-            </div>
-          )}
 
           <div className="absolute top-3 left-3 z-10">
             {state.isActive ? (
@@ -129,9 +120,9 @@ export function TournamentCard({
                 <span className="font-russo text-[9px] tracking-[0.3em] font-bold">LIVE</span>
               </div>
             ) : state.isPast ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-black/55 backdrop-blur-sm">
-                <Flag className="w-3 h-3 text-white/40" />
-                <span className="font-russo text-[9px] tracking-[0.3em] text-white/50">ENDED</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-red-500/50 bg-red-500/15 backdrop-blur-sm shadow-[0_0_12px_rgba(239,68,68,0.3)]">
+                <Flag className="w-3 h-3 text-red-400" />
+                <span className="font-russo text-[9px] tracking-[0.3em] text-red-400">ENDED</span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/35 bg-gold/10 backdrop-blur-sm">
