@@ -73,114 +73,165 @@ function RoundsModal({ tournament, onClose }) {
   const roundCount = tournament.rounds?.length || 0;
   const state = deriveTournamentState(tournament);
 
+  const statusColor = state.isActive
+    ? { pill: 'bg-amber-400 text-black', dot: 'bg-black', label: 'LIVE NOW' }
+    : state.isPast
+    ? { pill: 'border border-white/15 bg-white/5 text-white/40', dot: '', label: 'ENDED' }
+    : { pill: 'border border-sky-400/30 bg-sky-500/10 text-sky-300', dot: 'bg-sky-400', label: 'UPCOMING' };
+
   return (
     <div className="t-modal-overlay" onClick={onClose} role="presentation">
       <motion.div
         role="dialog"
         aria-modal="true"
         aria-labelledby="t-modal-title"
-        className="t-modal"
+        className="t-modal-shell"
         onClick={e => e.stopPropagation()}
-        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+        exit={{ opacity: 0, scale: 0.96, y: 20 }}
+        transition={{ type: 'spring', stiffness: 340, damping: 28 }}
       >
-        <div className="t-modal-hazard-bar" aria-hidden />
-        <button
-          type="button"
-          className="t-modal-close-floating"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="t-modal-close-icon" strokeWidth={2.5} />
-        </button>
-
-        <div className="t-modal-layout">
-          <div className={`t-modal-hero ${tournament.image ? '' : 't-modal-hero--fallback'} ${state.isPast ? 't-modal-hero--past' : ''}`}>
-            {tournament.image && (
-              <img src={tournament.image} alt="" className="t-modal-hero-img" />
-            )}
-            <div className="t-modal-hero-overlay" />
-            <div className="t-modal-hero-grid" aria-hidden />
+        {/* ── Hero banner ── */}
+        <div className="relative w-full h-52 shrink-0 overflow-hidden">
+          {tournament.image ? (
+            <img
+              src={tournament.image}
+              alt=""
+              className={`w-full h-full object-cover ${state.isPast ? 'grayscale opacity-60' : ''}`}
+            />
+          ) : (
+            <div className="w-full h-full" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,160,60,0.25), transparent 65%), linear-gradient(180deg,#2a241f,#0d0a06)' }} />
+          )}
+          {/* gradient fade to body bg */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0d0a06] via-[#0d0a06]/20 to-transparent" />
+          {/* subtle grid texture */}
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px)', backgroundSize: '28px 28px' }} />
+          {/* hazard stripe at very top */}
+          <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'repeating-linear-gradient(-45deg,#e8a317,#e8a317 5px,#0d0a06 5px,#0d0a06 10px)' }} />
+          {/* status badge */}
+          <div className="absolute top-4 left-4">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-russo tracking-[0.3em] font-bold ${statusColor.pill}`}
+              style={state.isActive ? { boxShadow: '0 0 18px rgba(245,158,11,0.55)' } : {}}>
+              {(state.isActive || state.isUpcoming) && <span className={`w-1.5 h-1.5 rounded-full ${statusColor.dot} ${state.isActive ? 'animate-pulse' : ''}`} />}
+              {statusColor.label}
+            </div>
           </div>
+          {/* close button */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute top-3 right-3 flex items-center justify-center w-9 h-9 rounded-xl border border-white/15 bg-black/50 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/70 hover:border-white/30 transition-all"
+          >
+            <X className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+        </div>
 
-          <div className="t-modal-body">
-            <span className={`t-modal-status t-modal-status--${state.statusClass}`}>
-              {state.displayStatus}
-            </span>
-            <h3 id="t-modal-title" className="t-modal-title">
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 min-h-0 overflow-y-auto t-modal-scroll px-6 py-5 flex flex-col gap-5">
+
+          {/* Title + date */}
+          <div>
+            <h3 id="t-modal-title" className="font-orbitron text-xl font-black text-white leading-tight mb-2">
               {tournament.name}
             </h3>
-            <p className="t-modal-subtitle">
-              <CalendarRange className="t-modal-subtitle-icon" aria-hidden />
+            <div className="flex items-center gap-2 text-white/45 text-xs font-rajdhani">
+              <CalendarRange className="w-3.5 h-3.5 shrink-0" />
               {fmtDate(tournament.startDate)} — {fmtDate(tournament.endDate)}
-            </p>
-
-          <div className="t-modal-summary">
-            <div className="t-modal-summary-card">
-              <Layers className="t-modal-summary-icon" aria-hidden />
-              <span className="t-modal-summary-label">Rounds</span>
-              <strong className="t-modal-summary-value">{roundCount}</strong>
-            </div>
-            <div className="t-modal-summary-card t-modal-summary-card--no-icon">
-              <span className="t-modal-summary-label">Status</span>
-              <strong className="t-modal-summary-value">{activeRound ? 'Live window' : 'Waiting'}</strong>
-            </div>
-            <div className="t-modal-summary-card t-modal-summary-card--wide t-modal-summary-card--no-icon">
-              <span className="t-modal-summary-label">Active round</span>
-              <strong className="t-modal-summary-value t-modal-summary-value--truncate">
-                {activeRound ? activeRound.name || 'In progress' : '—'}
-              </strong>
             </div>
           </div>
 
-          <div className="t-modal-section-head">
-            <span className="t-modal-section-kicker">Schedule</span>
-            <h4 className="t-modal-section-title">Round windows</h4>
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Rounds', value: roundCount || '—' },
+              { label: 'Status', value: activeRound ? 'Live' : 'Waiting' },
+              { label: 'Active Round', value: activeRound ? (activeRound.name || 'In Progress') : '—' },
+            ].map(s => (
+              <div key={s.label} className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3">
+                <div className="font-russo text-[9px] tracking-[0.35em] text-amber-300/50 uppercase mb-1">{s.label}</div>
+                <div className="font-orbitron text-sm font-black text-white/90 truncate">{s.value}</div>
+              </div>
+            ))}
           </div>
 
-          {(!tournament.rounds || tournament.rounds.length === 0) && (
-            <p className="t-modal-empty">No rounds published yet. Check back soon.</p>
-          )}
-          <div className="t-rounds-list">
-            {(tournament.rounds || []).map((round, i) => {
-              const active = isRoundActive(round);
-              const intervalCount = round?.intervals?.length || 0;
-              return (
-                <div key={round.id || i} className={`t-round-row ${active ? 'active' : ''}`}>
-                  <div className="t-round-row-accent" aria-hidden />
-                  <div className="t-round-row-top">
-                    <div className="t-round-row-left">
-                      <span className="t-round-index">{i + 1}</span>
-                      <span className="t-round-row-name">{round.name || `Round ${i + 1}`}</span>
-                    </div>
-                    <div className="t-round-row-badges">
-                      {active && <span className="t-round-live-badge">Live</span>}
-                      {!active && (
-                        <span className="t-round-count-badge">{intervalCount} slot{intervalCount !== 1 ? 's' : ''}</span>
+          {/* Section label */}
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/8" />
+            <span className="font-russo text-[9px] tracking-[0.4em] text-amber-300/50 uppercase">Round Schedule</span>
+            <div className="h-px flex-1 bg-white/8" />
+          </div>
+
+          {/* Rounds list */}
+          {(!tournament.rounds || tournament.rounds.length === 0) ? (
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center">
+              <Trophy className="w-8 h-8 text-amber-400/30 mx-auto mb-2" />
+              <p className="font-russo text-xs text-white/35 tracking-widest">No rounds published yet</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 pb-2">
+              {(tournament.rounds || []).map((round, i) => {
+                const active = isRoundActive(round);
+                const intervalCount = round?.intervals?.length || 0;
+                return (
+                  <div
+                    key={round.id || i}
+                    className="relative rounded-xl overflow-hidden border transition-all"
+                    style={active
+                      ? { borderColor: 'rgba(74,222,128,0.3)', background: 'linear-gradient(145deg,rgba(34,197,94,0.07),rgba(0,0,0,0.3))' }
+                      : { borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.025)' }
+                    }
+                  >
+                    {/* left accent bar */}
+                    <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl"
+                      style={{ background: active ? 'linear-gradient(180deg,#4ade80,#22c55e)' : 'rgba(245,158,11,0.2)' }} />
+
+                    <div className="pl-4 pr-4 pt-3 pb-3">
+                      {/* round header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-lg text-[11px] font-orbitron font-black shrink-0"
+                            style={active
+                              ? { background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', color: '#86efac' }
+                              : { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,158,11,0.2)', color: '#f4cb7b' }
+                            }>{i + 1}</span>
+                          <span className="font-orbitron text-sm font-bold text-white/90">{round.name || `Round ${i + 1}`}</span>
+                        </div>
+                        {active ? (
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-russo tracking-widest font-bold bg-green-500/15 border border-green-400/30 text-green-300">
+                            <span className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />LIVE
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-[9px] font-russo tracking-widest border border-white/10 text-white/35">
+                            {intervalCount} slot{intervalCount !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* intervals */}
+                      {round.intervals && round.intervals.length > 0 ? (
+                        <div className="flex flex-col gap-2 mt-2">
+                          {round.intervals.map((iv, j) => (
+                            <div key={j} className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                              <div className="font-russo text-[8px] tracking-[0.35em] text-amber-300/40 mb-1.5 uppercase">Window {j + 1}</div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-rajdhani text-xs text-white/65">{fmtDateTime(iv.startDate)}</span>
+                                <span className="font-orbitron text-[10px] text-amber-400/50">→</span>
+                                <span className="font-rajdhani text-xs text-white/65">{fmtDateTime(iv.endDate)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="font-rajdhani text-xs text-white/30 italic mt-1">Schedule TBA</p>
                       )}
                     </div>
                   </div>
-                  <div className="t-round-row-times">
-                    {(round.intervals || []).map((iv, j) => (
-                      <div key={j} className="t-round-interval">
-                        <span className="t-round-interval-label">Window {j + 1}</span>
-                        <div className="t-round-interval-row">
-                          <span className="t-round-interval-range">{fmtDateTime(iv.startDate)}</span>
-                          <span className="t-round-interval-arrow" aria-hidden>→</span>
-                          <span className="t-round-interval-range">{fmtDateTime(iv.endDate)}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {(!round.intervals || round.intervals.length === 0) && (
-                      <div className="t-round-interval t-round-interval--muted">Schedule TBA</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
@@ -198,87 +249,115 @@ function TournamentCard({ t, walletAddress }) {
   const roundCount = t.rounds?.length || 0;
 
   useEffect(() => {
-    if (!walletAddress || !activeRound?.id) {
-      setMyRoundPoints(null);
-      return;
-    }
+    if (!walletAddress || !activeRound?.id) { setMyRoundPoints(null); return; }
     let cancelled = false;
     setPointsLoading(true);
     getRoundParticipation(activeRound.id, walletAddress)
       .then((data) => {
         if (cancelled) return;
-        if (data?.success && typeof data.roundPoints === 'number') {
-          setMyRoundPoints(data.roundPoints);
-        } else {
-          setMyRoundPoints(0);
-        }
+        setMyRoundPoints(data?.success && typeof data.roundPoints === 'number' ? data.roundPoints : 0);
       })
-      .catch(() => {
-        if (!cancelled) setMyRoundPoints(null);
-      })
-      .finally(() => {
-        if (!cancelled) setPointsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => { if (!cancelled) setMyRoundPoints(null); })
+      .finally(() => { if (!cancelled) setPointsLoading(false); });
+    return () => { cancelled = true; };
   }, [walletAddress, activeRound?.id]);
 
-  const pointsLabel =
-    !walletAddress ? '—' : !activeRound ? '—' : pointsLoading ? '…' : myRoundPoints == null ? '—' : String(Math.max(0, myRoundPoints));
+  const pointsLabel = !walletAddress ? '—' : !activeRound ? '—' : pointsLoading ? '…' : myRoundPoints == null ? '—' : String(Math.max(0, myRoundPoints));
+
+  const borderStyle = state.isActive
+    ? 'border-amber-400/35 shadow-[0_8px_40px_rgba(245,158,11,0.15)]'
+    : state.isPast
+    ? 'border-white/8'
+    : 'border-white/12 hover:border-amber-400/30 hover:shadow-[0_8px_36px_rgba(245,158,11,0.10)]';
 
   return (
     <>
-      <div className="t-card" onClick={() => setModalOpen(true)} role="button" tabIndex={0} onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          setModalOpen(true);
-        }
-      }}>
-        {t.image && (
-          <div className="t-card-cover">
-            <img src={t.image} alt={t.name} className="t-card-cover-img" />
-            <div className="t-card-cover-overlay" />
+      <motion.div
+        whileHover={{ y: -5 }}
+        transition={{ type: 'spring', stiffness: 340, damping: 26 }}
+        className={`group cursor-pointer rounded-2xl overflow-hidden border flex flex-col transition-all duration-300 ${borderStyle}`}
+        style={{ background: 'linear-gradient(160deg, #1c1409 0%, #0d0a06 100%)' }}
+        onClick={() => setModalOpen(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setModalOpen(true); } }}
+      >
+        {/* Cover image */}
+        <div className="relative h-44 overflow-hidden shrink-0">
+          {t.image ? (
+            <img src={t.image} alt={t.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-amber-900/30 to-black" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0d0a06] via-[#0d0a06]/35 to-transparent" />
+          {/* Top-left status badge */}
+          <div className="absolute top-3 left-3">
+            {state.isActive ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400 text-black shadow-[0_0_18px_rgba(245,158,11,0.5)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+                <span className="font-russo text-[9px] tracking-[0.3em] font-bold">LIVE</span>
+              </div>
+            ) : state.isPast ? (
+              <div className="px-3 py-1.5 rounded-full border border-white/15 bg-black/50 backdrop-blur-sm">
+                <span className="font-russo text-[9px] tracking-[0.3em] text-white/40">ENDED</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 backdrop-blur-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                <span className="font-russo text-[9px] tracking-[0.3em] text-sky-300">UPCOMING</span>
+              </div>
+            )}
           </div>
-        )}
-        <div className="t-card-status-row">
-          <span className={`t-card-status-pill ${state.statusClass}`}>{state.displayStatus}</span>
-          <span className="t-card-status-meta">{roundCount} {roundCount === 1 ? 'Round' : 'Rounds'}</span>
+          {/* Top-right rounds badge */}
+          {roundCount > 0 && (
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full border border-white/12 bg-black/50 backdrop-blur-sm">
+              <span className="font-russo text-[9px] text-white/50 tracking-widest">{roundCount} RDS</span>
+            </div>
+          )}
         </div>
-        <div className="t-card-top">
-          <div className="t-card-info">
-            <div className="t-card-title">{t.name}</div>
-            <div className="t-card-date">{fmtDate(t.startDate)} — {fmtDate(t.endDate)}</div>
-            <div className="t-card-rounds">
-              {activeRound
-                ? `Live now: ${activeRound.name || 'Active round'}`
-                : 'No round in play window right now'}
+
+        {/* Body */}
+        <div className="flex flex-col flex-1 p-4 gap-3">
+          {/* Name */}
+          <h3 className="font-orbitron text-base font-black text-white/95 group-hover:text-amber-300 transition-colors duration-200 leading-tight line-clamp-2">
+            {t.name}
+          </h3>
+
+          {/* Date */}
+          <div className="flex items-center gap-1.5">
+            <CalendarRange className="w-3 h-3 text-white/35 shrink-0" />
+            <span className="font-rajdhani text-xs text-white/40">{fmtDate(t.startDate)} — {fmtDate(t.endDate)}</span>
+          </div>
+
+          {/* Active round bar */}
+          {activeRound && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-green-500/20 bg-green-500/6">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+              <span className="font-russo text-[10px] tracking-widest text-green-300 truncate">{activeRound.name || 'Active Round'}</span>
+            </div>
+          )}
+
+          {/* Points row — only if wallet connected and round is active */}
+          {walletAddress && activeRound && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-amber-400/15 bg-amber-400/5">
+              <span className="font-russo text-[9px] tracking-[0.35em] text-amber-400/60 uppercase">Your Coins</span>
+              <span className="font-orbitron text-sm font-black text-amber-300">{pointsLabel}</span>
+            </div>
+          )}
+
+          <div className="mt-auto pt-1">
+            <div className="h-px bg-white/6 mb-3" />
+            <div className="flex items-center justify-between">
+              <span className={`font-russo text-[10px] tracking-[0.3em] uppercase ${state.isActive ? 'text-amber-400/80' : state.isPast ? 'text-white/25' : 'text-sky-400/60'}`}>
+                {state.isActive ? 'Enter Now' : state.isPast ? 'View Results' : 'Register'}
+              </span>
+              <div className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-200 ${state.isActive ? 'border-amber-400/35 bg-amber-400/10 group-hover:bg-amber-400/20' : 'border-white/12 bg-white/5 group-hover:border-amber-400/25'}`}>
+                <Star className={`w-3 h-3 ${state.isActive ? 'text-amber-400' : 'text-white/35 group-hover:text-amber-400/60'}`} />
+              </div>
             </div>
           </div>
         </div>
-        <div className="t-card-strip" aria-hidden="true" />
-        <div className="t-card-meta-grid">
-          <div className="t-card-meta-box">
-            <span className="t-card-meta-label">Access</span>
-            <strong className="t-card-meta-value">{walletAddress ? 'Wallet Ready' : 'Connect Wallet'}</strong>
-          </div>
-          <div className="t-card-meta-box">
-            <span className="t-card-meta-label">Round</span>
-            <strong className="t-card-meta-value">{activeRound ? 'Live' : 'Waiting'}</strong>
-          </div>
-          <div className="t-card-meta-box">
-            <span className="t-card-meta-label">Your coin Δ</span>
-            <strong className="t-card-meta-value" title="Coins earned vs baseline when the live window started (updates after you play)">
-              {pointsLabel}
-            </strong>
-          </div>
-        </div>
-        <div className="t-card-actions" onClick={(e) => e.stopPropagation()}>
-          <button type="button" className="wz-btn wz-btn--sm wz-btn--secondary wz-btn--grow t-btn t-btn-view w-full" onClick={() => setModalOpen(true)}>
-            View
-          </button>
-        </div>
-      </div>
+      </motion.div>
       {modalOpen && <RoundsModal tournament={t} onClose={() => setModalOpen(false)} />}
     </>
   );
@@ -287,9 +366,15 @@ function TournamentCard({ t, walletAddress }) {
 /* ─── Tournament Section ─────────────────────────────────────────────────── */
 function TournamentSection({ title, tournaments, walletAddress }) {
   if (!tournaments || tournaments.length === 0) return null;
+  const isActive = title.toLowerCase().includes('active');
   return (
-    <section className="t-section">
-      <h2 className="t-section-title">{title}</h2>
+    <section className="mb-10">
+      <div className="flex items-center gap-3 mb-5">
+        {isActive && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" style={{ boxShadow: '0 0 8px rgba(245,158,11,0.7)' }} />}
+        <div className="h-px w-4 bg-amber-400/50 rounded-full" />
+        <h2 className="font-russo text-xs tracking-[0.4em] text-amber-300/80 uppercase">{title}</h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-amber-400/20 to-transparent rounded-full" />
+      </div>
       <div className="t-cards-grid">
         {tournaments.map(t => (
           <TournamentCard key={t.id} t={t} walletAddress={walletAddress} />

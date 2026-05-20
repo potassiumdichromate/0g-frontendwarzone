@@ -45,6 +45,11 @@ import IapMarketplaceLayout from './IapMarketplaceLayout';
 import type { IapMarketDisplayItem, IapMarketCategory } from './IapMarketplaceLayout';
 
 // Simple price map for Guns (0G)
+const WARRIOR_PRICES_ETH = {
+  'Shadow Dancer': '5',
+  'Oldman Tracer': '7.5',
+};
+
 const GUN_PRICES_ETH = {
   'Shotgun': '0.8',
   'Bullpup': '1.6',
@@ -140,20 +145,21 @@ const IAP_WARRIORS_DATA = [
   { id: 3, image: characterThreeImage, detailImage: characterThreeImage, name: 'Oldman Tracer', value: 'Oldman Tracer', price: '7.5', type: 'Warriors' as const, owned: false },
 ];
 
-function buildItemsByCategory(ownedGuns: string[]): Record<IapMarketCategory, IapMarketDisplayItem[]> {
+function buildItemsByCategory(ownedGuns: string[], ownedWarriors: string[]): Record<IapMarketCategory, IapMarketDisplayItem[]> {
   const gunOwned = (v: string) => ownedGuns.includes(String(v));
+  const warriorOwned = (v: string) => ownedWarriors.includes(String(v));
   const warriors = IAP_WARRIORS_DATA.map((item, i) => ({
     id: item.id,
     name: item.name,
     amountLabel: item.value,
     priceNumeric: item.price,
-    rarity: item.owned ? 'COMMON' : RARITY_CYCLE[(i + 2) % RARITY_CYCLE.length],
-    popular: item.owned,
+    rarity: item.owned || warriorOwned(item.value) ? 'COMMON' : RARITY_CYCLE[(i + 2) % RARITY_CYCLE.length],
+    popular: item.owned || warriorOwned(item.value),
     image: item.image,
     detailImage: item.detailImage,
     iapType: item.type,
     iapValue: item.value,
-    owned: item.owned,
+    owned: item.owned || warriorOwned(item.value),
   }));
   const coins = IAP_COINS_DATA.map((item, i) => ({
     id: item.id,
@@ -275,7 +281,23 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
           } catch (e) {
             console.warn('Failed to update owned guns cache:', e);
           }
-          onPurchased?.(value);
+          onPurchased?.(value, type);
+        }
+        if (type === 'Warriors' && isDelivered) {
+          try {
+            const addr = localStorage.getItem('walletAddress');
+            if (addr) {
+              const key = `ownedWarriors:${addr.toLowerCase()}`;
+              const existing = JSON.parse(localStorage.getItem(key) || '[]');
+              if (!existing.includes(String(value))) {
+                const updated = [...existing, String(value)];
+                localStorage.setItem(key, JSON.stringify(updated));
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to update owned warriors cache:', e);
+          }
+          onPurchased?.(value, type);
         }
 
         // If delivery is still pending, poll status briefly in background.
@@ -295,16 +317,16 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
                 void refreshProfile();
               }
 
-              if (type === 'Guns' && completed) {
+              if (type === 'Guns' || type === 'Warriors') {
                 const addr = localStorage.getItem('walletAddress');
                 if (addr) {
-                  const key = `ownedGuns:${addr.toLowerCase()}`;
+                  const key = type === 'Guns' ? `ownedGuns:${addr.toLowerCase()}` : `ownedWarriors:${addr.toLowerCase()}`;
                   const existing = JSON.parse(localStorage.getItem(key) || '[]');
                   if (!existing.includes(String(value))) {
                     localStorage.setItem(key, JSON.stringify([...existing, String(value)]));
                   }
                 }
-                onPurchased?.(value);
+                onPurchased?.(value, type);
               }
             } catch (pollErr) {
               console.warn('Purchase status polling failed:', pollErr);
@@ -365,24 +387,27 @@ const CoinDetail = ({ coinImage, onClose, type, value, onPurchased }) => {
       setSendError(null);
 
       // Guard: prevent purchasing a gun that's already owned
-      if (type === 'Guns') {
+      if (type === 'Guns' || type === 'Warriors') {
         try {
           const addr = localStorage.getItem('walletAddress');
           if (addr) {
-            const owned = JSON.parse(localStorage.getItem(`ownedGuns:${addr.toLowerCase()}`) || '[]');
+            const key = type === 'Guns' ? `ownedGuns:${addr.toLowerCase()}` : `ownedWarriors:${addr.toLowerCase()}`;
+            const owned = JSON.parse(localStorage.getItem(key) || '[]');
             if (owned.includes(String(value))) {
-              alert('You already own this gun.');
+              alert(`You already own this ${type === 'Guns' ? 'gun' : 'warrior'}.`);
               return;
             }
           }
         } catch (e) {
-          console.warn('Owned guns cache read failed:', e);
+          console.warn('Owned item cache read failed:', e);
         }
       }
 
       let priceEth;
       if (type === 'Guns') {
         priceEth = GUN_PRICES_ETH[value];
+      } else if (type === 'Warriors') {
+        priceEth = WARRIOR_PRICES_ETH[value];
       } else if (type === 'Coins') {
         priceEth = COIN_PRICES_ETH[value];
       } else if (type === 'Gems') {
@@ -593,20 +618,27 @@ const IAP = () => {
     type: null,
     value: null,
   });
-  const [ownedGuns, setOwnedGuns] = useState([]);
+  const [ownedGuns, setOwnedGuns] = useState<string[]>([]);
+  const [ownedWarriors, setOwnedWarriors] = useState<string[]>([]);
 
-  const itemsByCategory = useMemo(() => buildItemsByCategory(ownedGuns), [ownedGuns]);
+  const itemsByCategory = useMemo(
+    () => buildItemsByCategory(ownedGuns, ownedWarriors),
+    [ownedGuns, ownedWarriors],
+  );
 
   useEffect(() => {
     try {
       const addr = localStorage.getItem('walletAddress');
       if (addr) {
-        const key = `ownedGuns:${addr.toLowerCase()}`;
-        const list = JSON.parse(localStorage.getItem(key) || '[]');
-        setOwnedGuns(Array.isArray(list) ? list : []);
+        const gunKey = `ownedGuns:${addr.toLowerCase()}`;
+        const warriorKey = `ownedWarriors:${addr.toLowerCase()}`;
+        const gunList = JSON.parse(localStorage.getItem(gunKey) || '[]');
+        const warriorList = JSON.parse(localStorage.getItem(warriorKey) || '[]');
+        setOwnedGuns(Array.isArray(gunList) ? gunList : []);
+        setOwnedWarriors(Array.isArray(warriorList) ? warriorList : []);
       }
     } catch (e) {
-      console.warn('Failed to load owned guns:', e);
+      console.warn('Failed to load owned marketplace items:', e);
     }
   }, []);
 
@@ -657,6 +689,7 @@ const IAP = () => {
   useEffect(() => {
     if (!isConnected) {
       setOwnedGuns([]);
+      setOwnedWarriors([]);
     }
   }, [isConnected]);
 
@@ -733,21 +766,38 @@ const IAP = () => {
                 type={detailView.type}
                 value={detailView.value}
                 onClose={closeDetail}
-                onPurchased={(gunName) => {
-                  if (!gunName) return;
-                  setOwnedGuns((prev) => {
-                    if (prev.includes(String(gunName))) return prev;
-                    const next = [...prev, String(gunName)];
-                    try {
-                      const addr = localStorage.getItem('walletAddress');
-                      if (addr) {
-                        localStorage.setItem(`ownedGuns:${addr.toLowerCase()}`, JSON.stringify(next));
+                onPurchased={(value, type) => {
+                  if (!value || !type) return;
+                  if (type === 'Guns') {
+                    setOwnedGuns((prev) => {
+                      if (prev.includes(String(value))) return prev;
+                      const next = [...prev, String(value)];
+                      try {
+                        const addr = localStorage.getItem('walletAddress');
+                        if (addr) {
+                          localStorage.setItem(`ownedGuns:${addr.toLowerCase()}`, JSON.stringify(next));
+                        }
+                      } catch (e) {
+                        console.warn('Failed to persist owned guns:', e);
                       }
-                    } catch (e) {
-                      console.warn('Failed to persist owned guns:', e);
-                    }
-                    return next;
-                  });
+                      return next;
+                    });
+                  }
+                  if (type === 'Warriors') {
+                    setOwnedWarriors((prev) => {
+                      if (prev.includes(String(value))) return prev;
+                      const next = [...prev, String(value)];
+                      try {
+                        const addr = localStorage.getItem('walletAddress');
+                        if (addr) {
+                          localStorage.setItem(`ownedWarriors:${addr.toLowerCase()}`, JSON.stringify(next));
+                        }
+                      } catch (e) {
+                        console.warn('Failed to persist owned warriors:', e);
+                      }
+                      return next;
+                    });
+                  }
                 }}
               />
             </motion.div>

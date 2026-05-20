@@ -222,7 +222,6 @@ const IapMarketplaceLayout = ({
   };
 
   const handleBuyNow = (item: IapMarketDisplayItem) => {
-    if (item.iapType === "Warriors") return;
     if (item.owned) return;
     if (!isConnected) {
       onRequestLogin();
@@ -646,21 +645,19 @@ const IapMarketplaceLayout = ({
                           </div>
                           <motion.div whileHover={item.owned ? {} : { scale: 1.03 }} whileTap={item.owned ? {} : { scale: 0.97 }}>
                             <GameButton
-                              variant={item.owned || isWarriorItem ? "metal" : isConnected ? "primary" : "metal"}
+                              variant={item.owned ? "metal" : isConnected ? "primary" : "metal"}
                               size="sm"
                               className="w-full"
-                              disabled={item.owned || isWarriorItem}
+                              disabled={item.owned}
                               onClick={() => handleBuyNow(item)}
                               style={
-                                isConnected && !item.owned && !isWarriorItem
+                                isConnected && !item.owned
                                   ? { background: button, borderColor: border, color: "hsl(20 35% 6%)" }
                                   : undefined
                               }
                             >
                               {item.owned ? (
-                                <>{isWarriorItem ? "FREE" : "OWNED"}</>
-                              ) : isWarriorItem ? (
-                                <>LOCKED</>
+                                <>OWNED</>
                               ) : isConnected ? (
                                 <span className="whitespace-nowrap">BUY</span>
                               ) : (
