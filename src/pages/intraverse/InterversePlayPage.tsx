@@ -1,11 +1,21 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Home, Trophy, Star, X, CalendarRange, Layers } from 'lucide-react';
-import { getTournaments, getRoundParticipation } from '../../utils/api';
+import { getTournaments } from '../../utils/api';
 import { useWallet } from '../../contexts/WalletContext';
 import MobileBottomNav from '../../components/MobileBottomNav';
 import PageWalletControls from '../../components/PageWalletControls';
+import { TournamentCardInteractive } from '@/components/tournaments/TournamentCardInteractive';
+import { TournamentDeployingSection } from '@/components/tournaments/TournamentDeployingSection';
+import {
+  deriveTournamentState,
+  fmtTournamentDate,
+  fmtTournamentDateTime,
+  isRoundActive,
+  partitionTournaments,
+} from '@/lib/tournamentState';
 import decoLamp from '@/assets/images/deco-lamp.png';
 import decoChain from '@/assets/images/deco-chain.png';
 import decoRubble from '@/assets/images/deco-rubble.png';
@@ -26,46 +36,6 @@ const TOURNAMENT_MARQUEE_ITEMS = [
   'CLAIM GLORY',
   'TOURNAMENT SEASON',
 ];
-
-/* ─── Helpers ────────────────────────────────────────────────────────────── */
-function fmtDate(ms) {
-  if (!ms) return '—';
-  return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function fmtDateTime(ms) {
-  if (!ms) return 'TBA';
-  return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-}
-
-function isRoundActive(round) {
-  if (!Array.isArray(round?.intervals) || round.intervals.length === 0) return false;
-  const now = Date.now();
-  return round.intervals.some(iv => now >= iv.startDate && now <= iv.endDate);
-}
-
-function deriveTournamentState(tournament) {
-  const now = Date.now();
-  const startMs = Number(tournament?.startDate || 0);
-  const endMs = Number(tournament?.endDate || 0);
-  const normalizedStatus = String(tournament?.status || '').toUpperCase();
-  const isLiveStatus = ['RUNNING', 'ACTIVE', 'LIVE', 'IN_PROGRESS'].includes(normalizedStatus);
-  const isEndedStatus = ['COMPLETED', 'ENDED', 'FINISHED', 'DONE', 'CLOSED'].includes(normalizedStatus);
-  const isUpcomingStatus = ['UPCOMING', 'SCHEDULED', 'PENDING'].includes(normalizedStatus);
-  const isPast =
-    isEndedStatus || (Number.isFinite(endMs) && endMs > 0 && endMs < now);
-  const isActive =
-    !isPast &&
-    (isLiveStatus ||
-      (Number.isFinite(startMs) && startMs > 0 &&
-        Number.isFinite(endMs) && endMs > 0 &&
-        startMs <= now && now <= endMs));
-  const isUpcoming =
-    !isPast && !isActive && (isUpcomingStatus || (Number.isFinite(startMs) && startMs > now));
-  const displayStatus = isPast ? 'ENDED' : isActive ? 'ACTIVE' : 'UPCOMING';
-  const statusClass = isPast ? 'finished' : isActive ? 'running' : 'upcoming';
-  return { isPast, isActive, isUpcoming, displayStatus, statusClass };
-}
 
 /* ─── Rounds Modal ───────────────────────────────────────────────────────── */
 function RoundsModal({ tournament, onClose }) {
@@ -93,7 +63,7 @@ function RoundsModal({ tournament, onClose }) {
         transition={{ type: 'spring', stiffness: 340, damping: 28 }}
       >
         {/* ── Hero banner ── */}
-        <div className="relative w-full h-52 shrink-0 overflow-hidden">
+        <div className="relative w-full h-32 sm:h-36 shrink-0 overflow-hidden">
           {tournament.image ? (
             <img
               src={tournament.image}
@@ -129,7 +99,7 @@ function RoundsModal({ tournament, onClose }) {
         </div>
 
         {/* ── Scrollable body ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto t-modal-scroll px-6 py-5 flex flex-col gap-5">
+        <div className="t-modal-scroll px-5 sm:px-6 py-4 flex flex-col gap-3 sm:gap-4">
 
           {/* Title + date */}
           <div>
@@ -138,7 +108,7 @@ function RoundsModal({ tournament, onClose }) {
             </h3>
             <div className="flex items-center gap-2 text-white/45 text-xs font-rajdhani">
               <CalendarRange className="w-3.5 h-3.5 shrink-0" />
-              {fmtDate(tournament.startDate)} — {fmtDate(tournament.endDate)}
+              {fmtTournamentDate(tournament.startDate)} — {fmtTournamentDate(tournament.endDate)}
             </div>
           </div>
 
@@ -170,7 +140,7 @@ function RoundsModal({ tournament, onClose }) {
               <p className="font-russo text-xs text-white/35 tracking-widest">No rounds published yet</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 pb-2">
+            <div className="flex flex-col gap-3">
               {(tournament.rounds || []).map((round, i) => {
                 const active = isRoundActive(round);
                 const intervalCount = round?.intervals?.length || 0;
@@ -216,9 +186,9 @@ function RoundsModal({ tournament, onClose }) {
                             <div key={j} className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
                               <div className="font-russo text-[8px] tracking-[0.35em] text-amber-300/40 mb-1.5 uppercase">Window {j + 1}</div>
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-rajdhani text-xs text-white/65">{fmtDateTime(iv.startDate)}</span>
+                                <span className="font-rajdhani text-xs text-white/65">{fmtTournamentDateTime(iv.startDate)}</span>
                                 <span className="font-orbitron text-[10px] text-amber-400/50">→</span>
-                                <span className="font-rajdhani text-xs text-white/65">{fmtDateTime(iv.endDate)}</span>
+                                <span className="font-rajdhani text-xs text-white/65">{fmtTournamentDateTime(iv.endDate)}</span>
                               </div>
                             </div>
                           ))}
@@ -238,146 +208,35 @@ function RoundsModal({ tournament, onClose }) {
   );
 }
 
-/* ─── Tournament Card ────────────────────────────────────────────────────── */
-function TournamentCard({ t, walletAddress }) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [myRoundPoints, setMyRoundPoints] = useState(null);
-  const [pointsLoading, setPointsLoading] = useState(false);
-
-  const activeRound = (t.rounds || []).find(isRoundActive);
-  const state = deriveTournamentState(t);
-  const roundCount = t.rounds?.length || 0;
-
-  useEffect(() => {
-    if (!walletAddress || !activeRound?.id) { setMyRoundPoints(null); return; }
-    let cancelled = false;
-    setPointsLoading(true);
-    getRoundParticipation(activeRound.id, walletAddress)
-      .then((data) => {
-        if (cancelled) return;
-        setMyRoundPoints(data?.success && typeof data.roundPoints === 'number' ? data.roundPoints : 0);
-      })
-      .catch(() => { if (!cancelled) setMyRoundPoints(null); })
-      .finally(() => { if (!cancelled) setPointsLoading(false); });
-    return () => { cancelled = true; };
-  }, [walletAddress, activeRound?.id]);
-
-  const pointsLabel = !walletAddress ? '—' : !activeRound ? '—' : pointsLoading ? '…' : myRoundPoints == null ? '—' : String(Math.max(0, myRoundPoints));
-
-  const borderStyle = state.isActive
-    ? 'border-amber-400/35 shadow-[0_8px_40px_rgba(245,158,11,0.15)]'
-    : state.isPast
-    ? 'border-white/8'
-    : 'border-white/12 hover:border-amber-400/30 hover:shadow-[0_8px_36px_rgba(245,158,11,0.10)]';
-
-  return (
-    <>
-      <motion.div
-        whileHover={{ y: -5 }}
-        transition={{ type: 'spring', stiffness: 340, damping: 26 }}
-        className={`group cursor-pointer rounded-2xl overflow-hidden border flex flex-col transition-all duration-300 ${borderStyle}`}
-        style={{ background: 'linear-gradient(160deg, #1c1409 0%, #0d0a06 100%)' }}
-        onClick={() => setModalOpen(true)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setModalOpen(true); } }}
-      >
-        {/* Cover image */}
-        <div className="relative h-44 overflow-hidden shrink-0">
-          {t.image ? (
-            <img src={t.image} alt={t.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-amber-900/30 to-black" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0d0a06] via-[#0d0a06]/35 to-transparent" />
-          {/* Top-left status badge */}
-          <div className="absolute top-3 left-3">
-            {state.isActive ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400 text-black shadow-[0_0_18px_rgba(245,158,11,0.5)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-                <span className="font-russo text-[9px] tracking-[0.3em] font-bold">LIVE</span>
-              </div>
-            ) : state.isPast ? (
-              <div className="px-3 py-1.5 rounded-full border border-white/15 bg-black/50 backdrop-blur-sm">
-                <span className="font-russo text-[9px] tracking-[0.3em] text-white/40">ENDED</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 backdrop-blur-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-                <span className="font-russo text-[9px] tracking-[0.3em] text-sky-300">UPCOMING</span>
-              </div>
-            )}
-          </div>
-          {/* Top-right rounds badge */}
-          {roundCount > 0 && (
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full border border-white/12 bg-black/50 backdrop-blur-sm">
-              <span className="font-russo text-[9px] text-white/50 tracking-widest">{roundCount} RDS</span>
-            </div>
-          )}
-        </div>
-
-        {/* Body */}
-        <div className="flex flex-col flex-1 p-4 gap-3">
-          {/* Name */}
-          <h3 className="font-orbitron text-base font-black text-white/95 group-hover:text-amber-300 transition-colors duration-200 leading-tight line-clamp-2">
-            {t.name}
-          </h3>
-
-          {/* Date */}
-          <div className="flex items-center gap-1.5">
-            <CalendarRange className="w-3 h-3 text-white/35 shrink-0" />
-            <span className="font-rajdhani text-xs text-white/40">{fmtDate(t.startDate)} — {fmtDate(t.endDate)}</span>
-          </div>
-
-          {/* Active round bar */}
-          {activeRound && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-green-500/20 bg-green-500/6">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-              <span className="font-russo text-[10px] tracking-widest text-green-300 truncate">{activeRound.name || 'Active Round'}</span>
-            </div>
-          )}
-
-          {/* Points row — only if wallet connected and round is active */}
-          {walletAddress && activeRound && (
-            <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-amber-400/15 bg-amber-400/5">
-              <span className="font-russo text-[9px] tracking-[0.35em] text-amber-400/60 uppercase">Your Coins</span>
-              <span className="font-orbitron text-sm font-black text-amber-300">{pointsLabel}</span>
-            </div>
-          )}
-
-          <div className="mt-auto pt-1">
-            <div className="h-px bg-white/6 mb-3" />
-            <div className="flex items-center justify-between">
-              <span className={`font-russo text-[10px] tracking-[0.3em] uppercase ${state.isActive ? 'text-amber-400/80' : state.isPast ? 'text-white/25' : 'text-sky-400/60'}`}>
-                {state.isActive ? 'Enter Now' : state.isPast ? 'View Results' : 'Register'}
-              </span>
-              <div className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-200 ${state.isActive ? 'border-amber-400/35 bg-amber-400/10 group-hover:bg-amber-400/20' : 'border-white/12 bg-white/5 group-hover:border-amber-400/25'}`}>
-                <Star className={`w-3 h-3 ${state.isActive ? 'text-amber-400' : 'text-white/35 group-hover:text-amber-400/60'}`} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-      {modalOpen && <RoundsModal tournament={t} onClose={() => setModalOpen(false)} />}
-    </>
-  );
-}
-
 /* ─── Tournament Section ─────────────────────────────────────────────────── */
-function TournamentSection({ title, tournaments, walletAddress }) {
+function TournamentSection({ title, tournaments, walletAddress, onOpenModal, subtitle }) {
   if (!tournaments || tournaments.length === 0) return null;
   const isActive = title.toLowerCase().includes('active');
   return (
     <section className="mb-10">
-      <div className="flex items-center gap-3 mb-5">
-        {isActive && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" style={{ boxShadow: '0 0 8px rgba(245,158,11,0.7)' }} />}
-        <div className="h-px w-4 bg-amber-400/50 rounded-full" />
-        <h2 className="font-russo text-xs tracking-[0.4em] text-amber-300/80 uppercase">{title}</h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-amber-400/20 to-transparent rounded-full" />
+      <div className="flex items-center gap-3 mb-2">
+        {isActive && (
+          <span
+            className="w-2 h-2 rounded-full bg-gold animate-pulse shrink-0"
+            style={{ boxShadow: '0 0 8px hsl(42, 100%, 50%, 0.7)' }}
+          />
+        )}
+        <div className="h-px w-4 bg-gold/50 rounded-full" />
+        <h2 className="font-russo text-xs tracking-[0.4em] text-gold/80 uppercase">{title}</h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-gold/20 to-transparent rounded-full" />
       </div>
+      {subtitle && (
+        <p className="font-rajdhani text-sm text-muted-foreground mb-5 pl-0 sm:pl-6">{subtitle}</p>
+      )}
       <div className="t-cards-grid">
-        {tournaments.map(t => (
-          <TournamentCard key={t.id} t={t} walletAddress={walletAddress} />
+        {tournaments.map((t, i) => (
+          <TournamentCardInteractive
+            key={t.id}
+            tournament={t}
+            index={i}
+            walletAddress={walletAddress}
+            onOpenModal={onOpenModal}
+          />
         ))}
       </div>
     </section>
@@ -448,6 +307,16 @@ export default function InterversePlayPage() {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [modalTournament, setModalTournament] = useState(null);
+
+  useEffect(() => {
+    if (!modalTournament) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [modalTournament]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -472,11 +341,8 @@ export default function InterversePlayPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const active = tournaments.filter(t => t.status === 'RUNNING');
-  const upcoming = tournaments.filter(t => t.status === 'UPCOMING');
-  const previous = tournaments.filter(t => t.status === 'FINISHED');
-  const hasKnownStatus = active.length + upcoming.length + previous.length > 0;
-  const others = hasKnownStatus ? [] : tournaments;
+  const { active, upcoming, previous } = partitionTournaments(tournaments);
+  const hasLiveOrUpcoming = active.length > 0 || upcoming.length > 0;
 
   return (
     <>
@@ -583,13 +449,45 @@ export default function InterversePlayPage() {
 
               {!loading && !error && (
                 <>
-                  <TournamentSection title="Active Tournaments" tournaments={active} walletAddress={address} />
-                  <TournamentSection title="Upcoming Tournaments" tournaments={upcoming} walletAddress={address} />
-                  <TournamentSection title="Previous Tournaments" tournaments={previous} walletAddress={address} />
-                  <TournamentSection title="Tournament" tournaments={others} walletAddress={address} />
-                  {tournaments.length === 0 && (
-                    <div className="intraverse-feedback-card">No tournaments found.</div>
+                  <TournamentSection
+                    title="Active Tournaments"
+                    tournaments={active}
+                    walletAddress={address}
+                    onOpenModal={setModalTournament}
+                  />
+                  <TournamentSection
+                    title="Upcoming Tournaments"
+                    tournaments={upcoming}
+                    walletAddress={address}
+                    onOpenModal={setModalTournament}
+                  />
+
+                  {!hasLiveOrUpcoming && tournaments.length > 0 && (
+                    <TournamentDeployingSection cardCount={2} />
                   )}
+
+                  <TournamentSection
+                    title="Previous Tournaments"
+                    tournaments={previous}
+                    walletAddress={address}
+                    onOpenModal={setModalTournament}
+                    subtitle="These brackets have ended. New tournaments are coming soon."
+                  />
+
+                  {tournaments.length === 0 && (
+                    <div className="space-y-8">
+                      <div className="intraverse-feedback-card text-center py-10">
+                        <p className="font-orbitron text-lg font-black text-foreground mb-2">
+                          No tournaments yet
+                        </p>
+                        <p className="font-rajdhani text-sm text-muted-foreground">
+                          The Warzone circuit is being prepared. Check back soon.
+                        </p>
+                      </div>
+                      <TournamentDeployingSection cardCount={2} />
+                    </div>
+                  )}
+
                 </>
               )}
             </div>
@@ -609,6 +507,15 @@ export default function InterversePlayPage() {
           </section>
         </div>
       </div>
+
+      {modalTournament &&
+        createPortal(
+          <RoundsModal
+            tournament={modalTournament}
+            onClose={() => setModalTournament(null)}
+          />,
+          document.body,
+        )}
 
       <MobileBottomNav current="tournament" />
     </>

@@ -8,7 +8,11 @@ import { Trophy, ShoppingCart, ArrowRight, Play, ChevronDown, Map, Users, Shield
 import { useLocation } from "react-router-dom";
 import { useWallet } from "@/contexts/WalletContext";
 import { HARDCODED_TOURNAMENTS } from "@/constants/tournaments";
+import { TournamentCard } from "@/components/tournaments/TournamentCard";
+import { TournamentComingSoonCard } from "@/components/tournaments/TournamentComingSoonCard";
+import { partitionTournaments } from "@/lib/tournamentState";
 import { WARRIOR_CHARACTERS } from "@/constants/characters";
+import { ZeroGInfrastructureStatus } from "@/components/zerog/ZeroGInfrastructureStatus";
 
 import iconCoins from "@/assets/icon-coins.png";
 import iconGems from "@/assets/icon-gems.png";
@@ -65,6 +69,8 @@ export function HomePage() {
     ...item,
     image: item.image || [soldierCard, soldierCardTwo, soldierCardThree][idx % 3],
   }));
+  const { active: liveTournaments, upcoming: upcomingTournaments } = partitionTournaments(homeTournaments);
+  const allHomeEnded = liveTournaments.length === 0 && upcomingTournaments.length === 0;
   const tournamentsLoading = false;
   const [currentCharIdx, setCurrentCharIdx] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -471,7 +477,7 @@ export function HomePage() {
         </div>
 
         {/* ===== MISSION BRIEFING SECTION ===== */}
-        <section id="game-features" className="relative z-10 py-16 sm:py-24 overflow-hidden">
+        <section id="game-features" className="relative z-10 py-12 sm:py-16 overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-[50vh] md:h-[56.25vw] md:max-h-screen z-0 overflow-hidden">
             <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-30">
               <source src="/videos/war-scene.mp4" type="video/mp4" />
@@ -493,102 +499,109 @@ export function HomePage() {
           />
 
           <div className="container mx-auto px-4 relative z-10">
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12 sm:mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 mb-4 rounded-full border border-gold/25 bg-gold/5 backdrop-blur-sm">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" style={{ boxShadow: "0 0 8px hsl(120,80%,45%,0.8)" }} />
-                <span className="font-russo text-[9px] tracking-[0.4em] text-gold/80 uppercase">Mission Log — Active</span>
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-6 sm:mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 rounded-full border border-gold/25 bg-gold/5 backdrop-blur-sm">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" style={{ boxShadow: "0 0 8px hsl(120,80%,45%,0.8)" }} />
+                <span className="font-russo text-[8px] tracking-[0.35em] text-gold/80 uppercase">Mission Log — Active</span>
               </div>
-              <h2 data-gsap="text-reveal" className="font-orbitron text-3xl sm:text-4xl md:text-6xl font-black mb-4">
+              <h2 data-gsap="text-reveal" className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-black mb-2">
                 <span className="text-foreground">YOUR </span>
                 <span className="text-gradient-gold">WORLD</span>
-                <br />
-                <span className="text-foreground">YOUR </span>
+                <span className="text-foreground"> · </span>
                 <span className="text-gradient-sunset">ADVENTURE</span>
               </h2>
-              <p className="font-rajdhani text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="font-rajdhani text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
                 Warzone Warriors transforms your gameplay into a Web3 powered battlefield where every victory counts.
               </p>
             </motion.div>
 
-            {/* Bento grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto">
-              {/* Featured: Battle — spans 2 cols */}
+            {/* Mission cards — single row on mobile + desktop */}
+            <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-2.5 max-w-5xl mx-auto w-full">
+              {/* Battle */}
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                whileHover={{ y: -4 }}
-                className="col-span-2 sm:col-span-2 relative rounded-2xl border border-gold/25 bg-gradient-to-br from-[#1c1508] to-[#0e0b06] p-6 overflow-hidden cursor-pointer group"
-                style={{ boxShadow: "0 0 40px rgba(255,215,60,0.06)" }}
+                whileHover={{ y: -3 }}
+                className="relative min-w-0 rounded-lg sm:rounded-xl border border-gold/25 bg-gradient-to-br from-[#1c1508] to-[#0e0b06] p-2 sm:p-3 overflow-hidden cursor-pointer group"
+                style={{ boxShadow: "0 0 20px rgba(255,215,60,0.05)" }}
               >
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                <div className="absolute -bottom-6 -right-6 text-[7rem] font-black font-orbitron text-gold/[0.04] leading-none select-none">01</div>
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold/10 border border-gold/20 group-hover:bg-gold/15 transition-colors">
-                    <Swords className="w-6 h-6 text-gold" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+                <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-gold/[0.04] leading-none select-none pointer-events-none">01</div>
+                <div className="relative z-10">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-gold/10 border border-gold/20 mb-1.5 sm:mb-2 group-hover:bg-gold/15 transition-colors">
+                    <Swords className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold" />
                   </div>
-                  <div>
-                    <p className="font-russo text-[10px] tracking-[0.35em] text-gold/60 mb-1">01 — COMBAT</p>
-                    <h3 className="font-orbitron text-xl font-black text-foreground mb-2">BATTLE</h3>
-                    <p className="font-rajdhani text-sm text-muted-foreground leading-relaxed max-w-sm">Engage in real-time PvP combat. Every hit counts, every move matters. Rise through the ranks to earn your place.</p>
-                  </div>
+                  <p className="font-russo text-[6px] sm:text-[8px] tracking-[0.2em] sm:tracking-[0.28em] text-gold/60 mb-0.5 leading-tight">01 — COMBAT</p>
+                  <h3 className="font-orbitron text-[10px] sm:text-sm font-black text-foreground mb-0.5 leading-tight">BATTLE</h3>
+                  <p className="font-rajdhani text-[9px] sm:text-[11px] md:text-xs text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3 hidden min-[400px]:block">Engage in real-time PvP combat. Every hit counts — rise through the ranks.</p>
                 </div>
               </motion.div>
 
               {/* Campaign */}
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }}
-                whileHover={{ y: -4 }}
-                className="relative rounded-2xl border border-border/60 bg-card/30 p-5 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
+                whileHover={{ y: -3 }}
+                className="relative min-w-0 rounded-lg sm:rounded-xl border border-border/60 bg-card/30 p-2 sm:p-3 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
               >
-                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-white/[0.03] leading-none select-none">02</div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/60 border border-border mb-4 group-hover:border-gold/30 transition-colors">
-                  <Map className="w-5 h-5 text-gold/80" />
+                <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-white/[0.03] leading-none select-none pointer-events-none">02</div>
+                <div className="relative z-10">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-card/60 border border-border mb-1.5 sm:mb-2 group-hover:border-gold/30 transition-colors">
+                    <Map className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold/80" />
+                  </div>
+                  <p className="font-russo text-[6px] sm:text-[8px] tracking-[0.2em] sm:tracking-[0.28em] text-muted-foreground mb-0.5">02</p>
+                  <h3 className="font-orbitron text-[10px] sm:text-sm font-black text-foreground mb-0.5 leading-tight">CAMPAIGN</h3>
+                  <p className="font-rajdhani text-[9px] sm:text-[11px] md:text-xs text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3 hidden min-[400px]:block">Epic story-driven missions across dangerous zones.</p>
                 </div>
-                <p className="font-russo text-[9px] tracking-[0.3em] text-muted-foreground mb-1">02</p>
-                <h3 className="font-orbitron text-base font-black text-foreground mb-1.5">CAMPAIGN</h3>
-                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Epic story-driven missions across dangerous zones.</p>
               </motion.div>
 
               {/* Armory */}
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.12 }}
-                whileHover={{ y: -4 }}
-                className="relative rounded-2xl border border-border/60 bg-card/30 p-5 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
+                whileHover={{ y: -3 }}
+                className="relative min-w-0 rounded-lg sm:rounded-xl border border-border/60 bg-card/30 p-2 sm:p-3 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
               >
-                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-white/[0.03] leading-none select-none">03</div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/60 border border-border mb-4 group-hover:border-gold/30 transition-colors">
-                  <Shield className="w-5 h-5 text-gold/80" />
+                <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-white/[0.03] leading-none select-none pointer-events-none">03</div>
+                <div className="relative z-10">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-card/60 border border-border mb-1.5 sm:mb-2 group-hover:border-gold/30 transition-colors">
+                    <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold/80" />
+                  </div>
+                  <p className="font-russo text-[6px] sm:text-[8px] tracking-[0.2em] sm:tracking-[0.28em] text-muted-foreground mb-0.5">03</p>
+                  <h3 className="font-orbitron text-[10px] sm:text-sm font-black text-foreground mb-0.5 leading-tight">ARMORY</h3>
+                  <p className="font-rajdhani text-[9px] sm:text-[11px] md:text-xs text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3 hidden min-[400px]:block">Unlock and upgrade lethal weapons and gear.</p>
                 </div>
-                <p className="font-russo text-[9px] tracking-[0.3em] text-muted-foreground mb-1">03</p>
-                <h3 className="font-orbitron text-base font-black text-foreground mb-1.5">ARMORY</h3>
-                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Unlock and upgrade lethal weapons and gear.</p>
               </motion.div>
 
               {/* Squad */}
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }}
-                whileHover={{ y: -4 }}
-                className="relative rounded-2xl border border-border/60 bg-card/30 p-5 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
+                whileHover={{ y: -3 }}
+                className="relative min-w-0 rounded-lg sm:rounded-xl border border-border/60 bg-card/30 p-2 sm:p-3 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
               >
-                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-white/[0.03] leading-none select-none">04</div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/60 border border-border mb-4 group-hover:border-gold/30 transition-colors">
-                  <Users className="w-5 h-5 text-gold/80" />
+                <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-white/[0.03] leading-none select-none pointer-events-none">04</div>
+                <div className="relative z-10">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-card/60 border border-border mb-1.5 sm:mb-2 group-hover:border-gold/30 transition-colors">
+                    <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold/80" />
+                  </div>
+                  <p className="font-russo text-[6px] sm:text-[8px] tracking-[0.2em] sm:tracking-[0.28em] text-muted-foreground mb-0.5">04</p>
+                  <h3 className="font-orbitron text-[10px] sm:text-sm font-black text-foreground mb-0.5 leading-tight">SQUAD</h3>
+                  <p className="font-rajdhani text-[9px] sm:text-[11px] md:text-xs text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3 hidden min-[400px]:block">Team up with allies and dominate together.</p>
                 </div>
-                <p className="font-russo text-[9px] tracking-[0.3em] text-muted-foreground mb-1">04</p>
-                <h3 className="font-orbitron text-base font-black text-foreground mb-1.5">SQUAD</h3>
-                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Team up with allies and dominate together.</p>
               </motion.div>
 
-              {/* Earn — featured, spans 2 cols on sm */}
+              {/* Earn */}
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
-                whileHover={{ y: -4 }}
-                className="col-span-2 sm:col-span-1 relative rounded-2xl border border-green-500/20 p-5 overflow-hidden cursor-pointer group hover:border-green-400/30 transition-all"
+                whileHover={{ y: -3 }}
+                className="relative min-w-0 rounded-lg sm:rounded-xl border border-green-500/20 p-2 sm:p-3 overflow-hidden cursor-pointer group hover:border-green-400/30 transition-all"
                 style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.05) 0%, rgba(14,11,6,0.9) 60%)" }}
               >
-                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-green-400/[0.06] leading-none select-none">05</div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl mb-4" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}>
-                  <Zap className="w-5 h-5 text-green-400" />
+                <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-green-400/[0.06] leading-none select-none pointer-events-none">05</div>
+                <div className="relative z-10">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg mb-1.5 sm:mb-2" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" />
+                  </div>
+                  <p className="font-russo text-[6px] sm:text-[8px] tracking-[0.2em] sm:tracking-[0.28em] text-green-400/60 mb-0.5">05</p>
+                  <h3 className="font-orbitron text-[10px] sm:text-sm font-black text-green-300 mb-0.5 leading-tight">EARN</h3>
+                  <p className="font-rajdhani text-[9px] sm:text-[11px] md:text-xs text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3 hidden min-[400px]:block">Real Web3 rewards for every win, on-chain.</p>
                 </div>
-                <p className="font-russo text-[9px] tracking-[0.3em] text-green-400/60 mb-1">05</p>
-                <h3 className="font-orbitron text-base font-black text-green-300 mb-1.5">EARN</h3>
-                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Real Web3 rewards for every win, on-chain.</p>
               </motion.div>
             </div>
+
+            <ZeroGInfrastructureStatus className="mt-6 sm:mt-8 max-w-5xl mx-auto" />
           </div>
         </section>
 
@@ -895,7 +908,9 @@ export function HomePage() {
                 <span className="text-gradient-gold">TOURNAMENTS</span>
               </h2>
               <p className="font-rajdhani text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mt-3">
-                Enter the warzone circuit. Compete in live brackets and claim glory.
+                {allHomeEnded
+                  ? "Recent brackets have concluded. New tournaments are deploying soon — stay ready."
+                  : "Enter the warzone circuit. Compete in live brackets and claim glory."}
               </p>
             </motion.div>
 
@@ -908,118 +923,17 @@ export function HomePage() {
               </div>
             ) : homeTournaments.length > 0 ? (
               <div data-gsap="stagger-children" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto mb-10">
-                {homeTournaments.map((t, i) => {
-                  const now = Date.now();
-                  const startMs = Number(t.startDate || 0);
-                  const endMs = Number(t.endDate || 0);
-                  const normalizedStatus = String(t.status || "").toUpperCase();
-                  const isLiveStatus = ["RUNNING", "ACTIVE", "LIVE", "IN_PROGRESS"].includes(normalizedStatus);
-                  const isEndedStatus = ["COMPLETED", "ENDED", "FINISHED", "DONE", "CLOSED"].includes(normalizedStatus);
-                  const isUpcomingStatus = ["UPCOMING", "SCHEDULED", "PENDING"].includes(normalizedStatus);
-                  const isLive = isLiveStatus || (
-                    Number.isFinite(startMs) && startMs > 0 &&
-                    Number.isFinite(endMs) && endMs > 0 &&
-                    startMs <= now && now <= endMs
-                  );
-                  const isPastTournament =
-                    isEndedStatus ||
-                    (Number.isFinite(endMs) && endMs > 0 && endMs < now);
-                  const isUpcomingTournament =
-                    !isPastTournament &&
-                    (isUpcomingStatus || (Number.isFinite(startMs) && startMs > now));
-                  const displayStatus = isPastTournament ? "ENDED" : isLive ? "ACTIVE" : isUpcomingTournament ? "UPCOMING" : "UPCOMING";
-                  const roundCount = (t.rounds || []).length;
-                  const fmtDate = (ms?: number) => ms ? new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "TBA";
-
-                  return (
-                    <motion.div key={String(t.id)} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                      whileHover={{ y: -6 }}
-                      className="group cursor-pointer"
-                    >
-                      <Link to="/tournament">
-                        <div className={`rounded-2xl overflow-hidden border transition-all duration-300 h-full flex flex-col ${
-                          isLive
-                            ? "border-gold/40 shadow-[0_8px_40px_rgba(255,198,71,0.15),0_0_0_1px_rgba(255,198,71,0.1)]"
-                            : isPastTournament
-                              ? "border-white/8"
-                              : "border-white/10 hover:border-gold/30 hover:shadow-[0_8px_40px_rgba(255,198,71,0.10)]"
-                        }`} style={{ background: "linear-gradient(160deg, #1a130a 0%, #0d0a07 100%)" }}>
-
-                          {/* Image area */}
-                          <div className="relative h-44 sm:h-52 overflow-hidden shrink-0">
-                            <img
-                              src={t.image}
-                              alt={t.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              loading="lazy"
-                            />
-                            {/* Gradient overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0d0a07] via-[#0d0a07]/40 to-transparent" />
-                            {/* Top-left status badge */}
-                            <div className="absolute top-3 left-3">
-                              {isLive ? (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold text-background shadow-[0_0_16px_rgba(255,215,60,0.5)]">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-background animate-pulse" />
-                                  <span className="font-russo text-[9px] tracking-[0.3em] font-bold">LIVE</span>
-                                </div>
-                              ) : isPastTournament ? (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-black/50 backdrop-blur-sm">
-                                  <span className="font-russo text-[9px] tracking-[0.3em] text-white/50">ENDED</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 backdrop-blur-sm">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-                                  <span className="font-russo text-[9px] tracking-[0.3em] text-sky-300">UPCOMING</span>
-                                </div>
-                              )}
-                            </div>
-                            {/* Rounds badge top-right */}
-                            {roundCount > 0 && (
-                              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full border border-white/12 bg-black/50 backdrop-blur-sm">
-                                <span className="font-russo text-[9px] text-white/50 tracking-widest">{roundCount} RDS</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Card body */}
-                          <div className="flex flex-col flex-1 p-4 sm:p-5">
-                            {/* Name */}
-                            <h3 className="font-orbitron text-base sm:text-lg font-black text-foreground leading-tight mb-2 truncate group-hover:text-gold transition-colors duration-200">
-                              {t.name}
-                            </h3>
-
-                            {/* Date range */}
-                            <div className="flex items-center gap-1.5 mb-4">
-                              <CalendarDays className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-                              <span className="font-rajdhani text-xs text-muted-foreground">
-                                {fmtDate(t.startDate)} — {fmtDate(t.endDate)}
-                              </span>
-                            </div>
-
-                            {/* Divider */}
-                            <div className="h-px bg-white/6 mb-4" />
-
-                            {/* CTA row */}
-                            <div className="flex items-center justify-between mt-auto">
-                              <span className={`font-russo text-[10px] tracking-[0.3em] ${
-                                isLive ? "text-gold" : isPastTournament ? "text-white/30" : "text-sky-400/70"
-                              }`}>
-                                {isLive ? "ENTER NOW" : isPastTournament ? "VIEW RESULTS" : "REGISTER"}
-                              </span>
-                              <div className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-200 ${
-                                isLive
-                                  ? "border-gold/40 bg-gold/10 group-hover:bg-gold/20"
-                                  : "border-white/12 bg-white/5 group-hover:border-gold/30 group-hover:bg-gold/8"
-                              }`}>
-                                <ArrowRight className={`w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5 ${isLive ? "text-gold" : "text-white/50 group-hover:text-gold/70"}`} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
+                {homeTournaments.map((t, i) => (
+                  <Link key={String(t.id)} to="/tournament" className="block h-full">
+                    <TournamentCard tournament={t} index={i} />
+                  </Link>
+                ))}
+                {allHomeEnded && (
+                  <TournamentComingSoonCard
+                    delay={homeTournaments.length * 0.08}
+                    subtitle="The next Warzone bracket is almost ready. Watch this space for dates and prizes."
+                  />
+                )}
               </div>
             ) : (
               <div className="rounded-2xl border border-gold/20 bg-card/30 px-6 py-10 text-center max-w-md mx-auto mb-10">

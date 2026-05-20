@@ -1653,20 +1653,21 @@
 /* ── Modal ───────────────────────────────────────────────────────────────── */
 .t-modal-overlay {
   position: fixed;
-  /* start below the fixed header + hazard bar (~112px) */
-  top: 112px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(6, 8, 14, 0.86);
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  background: rgba(6, 8, 14, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  z-index: 9999;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .t-modal {
@@ -1689,42 +1690,48 @@
     0 0 80px rgba(212, 160, 60, 0.10);
 }
 
-/* ── Redesigned modal shell (single-column: banner + scrollable body) ──── */
+/* ── Redesigned modal shell (sizes to content; scroll only when very tall) ─ */
 .t-modal-shell {
   position: relative;
-  width: min(880px, 96vw);
-  height: calc(100vh - 112px - 32px);
-  max-height: 860px;
-  min-height: 440px;
+  width: min(880px, calc(100vw - 32px));
+  height: fit-content;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   border-radius: 20px;
   border: 1px solid rgba(245, 180, 80, 0.28);
   background: linear-gradient(165deg, #1e1710 0%, #110e0b 55%, #0a0805 100%);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 158, 11, 0.3) rgba(255, 255, 255, 0.03);
   box-shadow:
     0 0 0 1px rgba(255, 200, 100, 0.08),
     0 32px 80px rgba(0, 0, 0, 0.7),
     0 0 80px rgba(212, 160, 60, 0.10);
 }
 
-.t-modal-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(245, 158, 11, 0.3) rgba(255, 255, 255, 0.03);
-}
-
-.t-modal-scroll::-webkit-scrollbar {
+.t-modal-shell::-webkit-scrollbar {
   width: 5px;
 }
 
-.t-modal-scroll::-webkit-scrollbar-track {
+.t-modal-shell::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 999px;
 }
 
-.t-modal-scroll::-webkit-scrollbar-thumb {
+.t-modal-shell::-webkit-scrollbar-thumb {
   background: rgba(245, 158, 11, 0.3);
   border-radius: 999px;
+}
+
+/* Body grows naturally — no inner scroll box */
+.t-modal-scroll {
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 /* hazard bar sits at the top, fixed height */
@@ -2226,23 +2233,21 @@
   }
 
   .t-modal-overlay {
-    top: 100px; /* mobile header is slightly shorter */
     padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
   }
 
   .t-modal {
     width: 96vw;
-    height: calc(100vh - 100px - 24px);
-    max-height: none;
-    min-height: 400px;
+    height: auto;
+    max-height: 92dvh;
+    min-height: unset;
     border-radius: 18px;
   }
 
   .t-modal-shell {
     width: 96vw;
-    height: calc(100vh - 100px - 24px);
-    max-height: none;
-    min-height: 400px;
+    max-height: calc(100dvh - 24px);
     border-radius: 18px;
   }
 
