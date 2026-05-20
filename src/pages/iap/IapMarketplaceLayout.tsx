@@ -16,12 +16,13 @@ import marketplaceGuns from "@/assets/images/marketplace-guns.png";
 
 import gemsSmall from "@/assets/images/gems-small.png";
 import gemsChest from "@/assets/images/gems-chest.png";
+import soldierCard from "@/assets/soldier-card-1-clean.png";
 
 import decoLamp from "@/assets/images/deco-lamp.png";
 import decoChain from "@/assets/images/deco-chain.png";
 import decoRubble from "@/assets/images/deco-rubble.png";
 
-export type IapMarketCategory = "coins" | "gems" | "guns";
+export type IapMarketCategory = "warriors" | "coins" | "gems" | "guns";
 
 export type IapMarketDisplayItem = {
   id: number;
@@ -33,7 +34,7 @@ export type IapMarketDisplayItem = {
   image: string;
   detailImage: string;
   rarity: string;
-  iapType: "Coins" | "Gems" | "Guns";
+  iapType: "Warriors" | "Coins" | "Gems" | "Guns";
   iapValue: string;
   owned?: boolean;
 };
@@ -49,6 +50,15 @@ type CategoryStyle = {
 };
 
 const CATEGORY_STYLE: Record<IapMarketCategory, CategoryStyle> = {
+  warriors: {
+    accent: "#ffc447",
+    glow: "#ffd66f",
+    soft: "rgba(255, 196, 71, 0.18)",
+    border: "rgba(255, 196, 71, 0.4)",
+    panel: "linear-gradient(145deg, rgba(62, 38, 15, 0.92) 0%, rgba(20, 12, 7, 0.96) 100%)",
+    button: "linear-gradient(180deg, #ffd66f 0%, #c78322 100%)",
+    icon: "⚔",
+  },
   coins: {
     accent: "#d9a441",
     glow: "#f6c86a",
@@ -88,13 +98,14 @@ const rarityColors: Record<string, { text: string; bg: string; border: string }>
 };
 
 const categoryImages: Record<IapMarketCategory, string> = {
+  warriors: soldierCard,
   coins: marketplaceCoins,
   gems: gemsChest,
   guns: marketplaceGuns,
 };
 
 const ITEMS_PER_PAGE = 6;
-const MARQUEE_ITEMS = ["COINS", "GEMS", "WEAPONS", "GEAR UP", "UPGRADE", "DOMINATE", "EARN REWARDS", "BATTLE"];
+const MARQUEE_ITEMS = ["WARRIORS", "COINS", "GEMS", "WEAPONS", "GEAR UP", "UPGRADE", "DOMINATE", "BATTLE"];
 
 export type IapMarketplaceLayoutProps = {
   itemsByCategory: Record<IapMarketCategory, IapMarketDisplayItem[]>;
@@ -114,7 +125,7 @@ const IapMarketplaceLayout = ({
   onDisconnect,
 }: IapMarketplaceLayoutProps) => {
   const [searchParams] = useSearchParams();
-  const [activeCategory, setActiveCategory] = useState<IapMarketCategory>("coins");
+  const [activeCategory, setActiveCategory] = useState<IapMarketCategory>("warriors");
 
   // ── My Funds modal ──
   const { canUsePrivy, activeWallet, allowedChain, openPrivyFunding } = usePrivyWalletTools();
@@ -179,13 +190,14 @@ const IapMarketplaceLayout = ({
 
   useEffect(() => {
     const cat = searchParams.get("category") as IapMarketCategory;
-    if (cat && ["coins", "gems", "guns"].includes(cat)) setActiveCategory(cat);
+    if (cat && ["warriors", "coins", "gems", "guns"].includes(cat)) setActiveCategory(cat);
   }, [searchParams]);
 
   const [currentPage, setCurrentPage] = useState(1);
 
   const items = itemsByCategory[activeCategory];
   const isGunCategory = activeCategory === "guns";
+  const isWarriorCategory = activeCategory === "warriors";
   const { accent, glow, soft, border, panel, button } = CATEGORY_STYLE[activeCategory];
   const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
   const currentItems = items.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -195,12 +207,22 @@ const IapMarketplaceLayout = ({
   }, [activeCategory]);
 
   const categories: { id: IapMarketCategory; label: string; image: string; desc: string }[] = [
+    { id: "warriors", label: "WARRIORS", image: soldierCard, desc: "Characters" },
     { id: "coins", label: "COINS", image: marketplaceCoins, desc: "Currency" },
     { id: "gems", label: "GEMS", image: gemsSmall, desc: "Premium" },
     { id: "guns", label: "ARSENAL", image: marketplaceGuns, desc: "Weapons" },
   ];
 
+  const formatPrice = (item?: IapMarketDisplayItem) => {
+    if (!item) return "—";
+    if (item.iapType === "Warriors") {
+      return item.priceNumeric === "FREE" ? "FREE" : `${item.priceNumeric} 0G`;
+    }
+    return `${item.priceNumeric} 0G`;
+  };
+
   const handleBuyNow = (item: IapMarketDisplayItem) => {
+    if (item.iapType === "Warriors") return;
     if (item.owned) return;
     if (!isConnected) {
       onRequestLogin();
@@ -437,7 +459,7 @@ const IapMarketplaceLayout = ({
                     {/* Aura blob */}
                     <div className="absolute w-28 h-28 rounded-full blur-2xl animate-aura" style={{ background: glow, opacity: 0.18 }} />
 
-                    {!isGunCategory && (
+                    {!isGunCategory && !isWarriorCategory && (
                       <div className="absolute inset-x-5 top-5 h-24 rounded-2xl border border-white/5 bg-background/25" />
                     )}
 
@@ -445,7 +467,7 @@ const IapMarketplaceLayout = ({
                     <motion.img
                       src={categoryImages[activeCategory]}
                       alt={activeCategory}
-                      className="relative z-10 w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44 object-contain mt-3"
+                      className={`relative z-10 object-contain mt-3 ${isWarriorCategory ? "w-36 h-36 sm:w-48 sm:h-48 lg:w-56 lg:h-56" : "w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44"}`}
                       loading="lazy"
                       animate={{ y: [0, -10, 0] }}
                       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -457,7 +479,7 @@ const IapMarketplaceLayout = ({
                       className="relative z-10 font-orbitron text-xl sm:text-2xl font-black mt-3"
                       style={{ color: glow }}
                     >
-                      {activeCategory.toUpperCase()}
+                      {isWarriorCategory ? "HANDSOME MAN" : activeCategory.toUpperCase()}
                     </h3>
                     <p className="relative z-10 font-rajdhani text-xs text-muted-foreground tracking-widest mt-0.5">
                       {categories.find(c => c.id === activeCategory)?.desc}
@@ -473,7 +495,9 @@ const IapMarketplaceLayout = ({
                       <div className="rounded-2xl border border-white/8 bg-background/20 px-3 py-3">
                         <div className="font-russo text-[10px] tracking-widest text-muted-foreground mb-1">PRICE RANGE</div>
                         <div className="font-orbitron text-sm font-black text-foreground">
-                          {items[0]?.priceNumeric} - {items[items.length - 1]?.priceNumeric} 0G
+                          {isWarriorCategory
+                            ? `${formatPrice(items[0])} - ${formatPrice(items[items.length - 1])}`
+                            : `${items[0]?.priceNumeric} - ${items[items.length - 1]?.priceNumeric} 0G`}
                         </div>
                       </div>
                     </div>
@@ -498,6 +522,7 @@ const IapMarketplaceLayout = ({
                 {currentItems.map((item, index) => {
                   const rarity = rarityColors[item.rarity ?? "COMMON"];
                   const showGunArtWithoutFrame = item.iapType === "Guns";
+                  const isWarriorItem = item.iapType === "Warriors";
                   return (
                     <motion.div
                       key={item.id}
@@ -580,14 +605,18 @@ const IapMarketplaceLayout = ({
 
                         {/* Info */}
                         <div className="text-center space-y-0.5 sm:space-y-1 px-1">
-                          <h3 className="font-russo text-xs sm:text-base text-foreground">{item.name}</h3>
+                          {!isWarriorItem && (
+                            <h3 className="font-russo text-xs sm:text-base text-foreground">{item.name}</h3>
+                          )}
                           <div className="font-orbitron text-base sm:text-2xl font-black" style={{ color: glow }}>{item.amountLabel}</div>
                           <p className="hidden sm:block font-rajdhani text-sm text-muted-foreground min-h-[20px]">
-                            {activeCategory === "guns"
-                              ? "Weapon unlock for combat loadouts"
-                              : activeCategory === "gems"
-                                ? "Premium reserve for rare upgrades"
-                                : "Battle currency for gear and progression"}
+                            {activeCategory === "warriors"
+                              ? "Character roster for battle deployment"
+                              : activeCategory === "guns"
+                                ? "Weapon unlock for combat loadouts"
+                                : activeCategory === "gems"
+                                  ? "Premium reserve for rare upgrades"
+                                  : "Battle currency for gear and progression"}
                           </p>
                           {item.bonus && (
                             <motion.div
@@ -608,28 +637,30 @@ const IapMarketplaceLayout = ({
                             <span className="hidden sm:block font-rajdhani text-xs text-muted-foreground">Price</span>
                             <div className="flex items-center gap-1 w-full sm:w-auto justify-center sm:justify-end">
                               <Zap className="w-3 h-3 text-gold" />
-                              <span className="font-orbitron font-bold text-gold text-xs sm:text-lg">{item.priceNumeric} 0G</span>
+                              <span className="font-orbitron font-bold text-gold text-xs sm:text-lg">{formatPrice(item)}</span>
                             </div>
                           </div>
                           <div className="hidden sm:flex items-center justify-between mb-2 text-[10px] font-russo tracking-widest text-muted-foreground">
                             <span>INSTANT DELIVERY</span>
-                            <span>{isConnected ? "WALLET READY" : "AUTH REQUIRED"}</span>
+                            <span>{isWarriorItem ? "WALLET READY" : isConnected ? "WALLET READY" : "AUTH REQUIRED"}</span>
                           </div>
                           <motion.div whileHover={item.owned ? {} : { scale: 1.03 }} whileTap={item.owned ? {} : { scale: 0.97 }}>
                             <GameButton
-                              variant={item.owned ? "metal" : isConnected ? "primary" : "metal"}
+                              variant={item.owned || isWarriorItem ? "metal" : isConnected ? "primary" : "metal"}
                               size="sm"
                               className="w-full"
-                              disabled={item.owned}
+                              disabled={item.owned || isWarriorItem}
                               onClick={() => handleBuyNow(item)}
                               style={
-                                isConnected && !item.owned
+                                isConnected && !item.owned && !isWarriorItem
                                   ? { background: button, borderColor: border, color: "hsl(20 35% 6%)" }
                                   : undefined
                               }
                             >
                               {item.owned ? (
-                                <>OWNED</>
+                                <>{isWarriorItem ? "FREE" : "OWNED"}</>
+                              ) : isWarriorItem ? (
+                                <>LOCKED</>
                               ) : isConnected ? (
                                 <span className="whitespace-nowrap">BUY</span>
                               ) : (

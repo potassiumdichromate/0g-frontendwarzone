@@ -1,5 +1,8 @@
 import axios from 'axios';
-import { API_BASE_URL, buildApiUrl } from '../config/api';
+import { API_BASE_URL } from '../config/api';
+import * as zerog from '../api/zerog';
+import { getHardcodedTournamentsResponse } from '../constants/tournaments';
+import { getStableInjectedProvider } from '../lib/injectedEthereum';
 
 const SESSION_CHANGED_EVENT = 'warzone-session-changed';
 
@@ -9,16 +12,13 @@ function notifySessionChanged() {
   }
 }
 
-// Create an axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important for sending cookies with requests
 });
 
-// Add a request interceptor to include the auth token if it exists
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -27,38 +27,35 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error),
 );
 
-// Leaderboard API
-export const getLeaderboard = async () => {
+/** GET /player/leaderboard */
+export const getLeaderboard = async (params: Record<string, unknown> = {}) => {
   try {
-    const response = await api.get('/leaderboard');
-    return response.data;
+    const response = await api.get('/player/leaderboard', { params });
+    return response.data?.leaderboard ?? response.data;
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
     throw error;
   }
 };
 
-// All-time (alternate DB) leaderboard
-export const getAllTimeLeaderboard = async (params = {}) => {
+/** GET /0g/leaderboard/verified */
+export const getAllTimeLeaderboard = async (params: Record<string, unknown> = {}) => {
   try {
-    const response = await api.get('/leaderboard/allTime', { params });
-    // newDBController returns { success, count, data }
-    if (response.data && Array.isArray(response.data.data)) {
-      return response.data.data;
+    const filter = (params.filter as string) || 'finalized';
+    const response = await api.get('/0g/leaderboard/verified', { params: { filter, ...params } });
+    if (response.data && Array.isArray(response.data.leaderboard)) {
+      return response.data.leaderboard;
     }
     return response.data;
   } catch (error) {
-    console.error('Error fetching all-time leaderboard:', error);
+    console.error('Error fetching verified leaderboard:', error);
     throw error;
   }
 };
 
-/** Normalized row for the leaderboard UI (coins + optional XP). */
 export type LeaderboardEntry = {
   rank: number;
   name: string;
@@ -66,59 +63,78 @@ export type LeaderboardEntry = {
   experience: number;
 };
 
-/**
- * Accepts either all-time API rows `{ rank, name, coins, experience }` or legacy
- * `/leaderboard` rows `{ name, PlayerResources?: { coin } }`.
- */
 export function normalizeLeaderboardRows(data: unknown): LeaderboardEntry[] {
   if (!Array.isArray(data) || data.length === 0) return [];
 
   const first = data[0] as Record<string, unknown>;
   const hasRank = typeof first?.rank === 'number';
 
-  if (hasRank && first.name != null) {
-    return (data as Record<string, unknown>[]).map((row) => ({
-      rank: Number(row.rank),
-      name: String(row.name ?? 'Unknown'),
-      coins: Number(row.coins ?? 0),
-      experience: Number(row.experience ?? 0),
-    }));
+  if (hasRank) {
+    return (data as Record<string, unknown>[]).map((row) => {
+      const pr = row.PlayerResources as { coin?: number } | undefined;
+      const pp = row.PlayerProfile as { exp?: number } | undefined;
+      const name =
+        row.displayName ??
+        row.name ??
+        (typeof row.walletAddress === 'string'
+          ? `Warrior_${String(row.walletAddress).slice(2, 8)}`
+          : 'Unknown');
+      return {
+        rank: Number(row.rank),
+        name: String(name),
+        coins: Number(row.coinSnapshot ?? pr?.coin ?? row.coins ?? 0),
+        experience: Number(pp?.exp ?? row.experience ?? 0),
+      };
+    });
   }
 
   const mapped = (data as Record<string, unknown>[]).map((row, i) => {
     const pr = row.PlayerResources as { coin?: number } | undefined;
-    const coins = Number(pr?.coin ?? row.coins ?? 0);
+    const pp = row.PlayerProfile as { exp?: number } | undefined;
+    const coins = Number(pr?.coin ?? row.coins ?? row.coinSnapshot ?? 0);
     return {
-      name: String(row.name ?? `Player ${i + 1}`),
+      name: String(
+        row.displayName ??
+          row.name ??
+          (typeof row.walletAddress === 'string'
+            ? `Warrior_${String(row.walletAddress).slice(2, 8)}`
+            : `Player ${i + 1}`),
+      ),
       coins,
-      experience: Number(row.experience ?? 0),
+      experience: Number(pp?.exp ?? row.experience ?? 0),
     };
   });
   mapped.sort((a, b) => b.coins - a.coins);
   return mapped.map((r, i) => ({ ...r, rank: i + 1 }));
 }
 
-// Name APIs
-export const checkNameAvailability = async (name) => {
+/** PATCH /player/profile — display name stored on profile when supported */
+export const checkNameAvailability = async (name: string) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No authentication token found');
+
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
+    await api.patch('/player/profile', { displayName: name });
+    return { success: true, message: 'Name is available' };
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/';
     }
-    
-    const response = await api.post('/name', { 
-      name 
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error('Error checking name availability:', error);
-    // If unauthorized, clear the token and redirect to login
-    if (error.response && error.response.status === 401) {
+    const message = error.response?.data?.message || error.message || 'Name is unavailable';
+    return { success: false, message };
+  }
+};
+
+export const savePlayerName = async (name: string) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No authentication token found');
+
+  try {
+    const response = await api.patch('/player/profile', { displayName: name });
+    return { success: true, ...response.data };
+  } catch (error: any) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/';
     }
@@ -126,107 +142,81 @@ export const checkNameAvailability = async (name) => {
   }
 };
 
-export const savePlayerName = async (name) => {
+export const getPlayerName = async (walletAddress: string) => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    const walletAddress = localStorage.getItem('walletAddress');
-    const response = await api.post('/saveName', { 
-      name,
-      walletAddress
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error('Error saving player name:', error);
-    // If unauthorized, clear the token and redirect to login
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/';
-    }
-    throw error;
-  }
-};
-
-export const getPlayerName = async (walletAddress) => {
-  try {
-    const token = await localStorage.getItem('token');
-    const response = await api.get(`/name?walletAddress=${walletAddress}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data;
+    const overview = await zerog.getPlayerOverview(walletAddress);
+    const displayName = (overview as { displayName?: string }).displayName;
+    return { success: true, name: displayName ?? null };
   } catch (error) {
     console.error('Error getting player name:', error);
-    // If unauthorized, clear the token and redirect to login
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/';
-    }
     throw error;
   }
 };
 
-export const loginUser = async (walletAddress) => {
+type EthereumProvider = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+};
+
+/**
+ * POST /auth/nonce + POST /auth/login (wallet signature).
+ * Pass `ethereumProvider` when using Privy embedded wallet.
+ */
+export const loginUser = async (
+  walletAddress: string,
+  ethereumProvider?: EthereumProvider | null,
+) => {
   try {
-    // First, make sure we're not already logged in with this wallet
-    // const currentWallet = getWalletAddress();
-    // if (currentWallet && currentWallet.toLowerCase() === walletAddress.toLowerCase()) {
-    //   console.log('Already logged in with this wallet');
-    //   return { success: true, message: 'Already logged in' };
-    // }
-
-    // Clear any existing auth data
     localStorage.removeItem('token');
-    
-    // Make the login request
-    const response = await api.post('/login', { walletAddress });
-    
-    // Log the full response for debugging
-    console.log('Login response:', response);
-    
-    if (response.data && response.data.success) {
-      // Store the wallet address in localStorage
-      localStorage.setItem('walletAddress', walletAddress);
-      
-      // Store the token if provided
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        console.log('Token stored in localStorage');
-      } else {
-        console.warn('No token received in login response');
-      }
 
-      notifySessionChanged();
-      
-      return response.data;
-    } else {
-      throw new Error(response.data?.message || 'Login failed');
+    const provider =
+      ethereumProvider ??
+      getStableInjectedProvider() ??
+      (typeof window !== 'undefined' ? (window as Window & { ethereum?: EthereumProvider }).ethereum : null);
+
+    if (!provider?.request) {
+      throw new Error('No wallet provider available for signing');
     }
-  } catch (error) {
+
+    const { message, nonce } = await zerog.getNonce(walletAddress);
+    const signature = (await provider.request({
+      method: 'personal_sign',
+      params: [message, walletAddress],
+    })) as string;
+
+    const data = await zerog.login(walletAddress, signature, nonce);
+
+    if (data?.token) {
+      localStorage.setItem('walletAddress', walletAddress);
+      localStorage.setItem('token', data.token);
+      notifySessionChanged();
+      return { success: true, token: data.token, wallet: data.wallet, expiresIn: data.expiresIn };
+    }
+
+    throw new Error('Login failed: no token received');
+  } catch (error: any) {
     console.error('Login error:', error);
-    // Clear any partial auth data on error
     localStorage.removeItem('token');
     localStorage.removeItem('walletAddress');
     notifySessionChanged();
-    
-    // Return a more detailed error message
-    const errorMessage = error.response?.data?.message || 
-                        error.message || 
-                        'Failed to connect to the server';
-    
+
+    const errorMessage =
+      error.response?.data?.message || error.message || 'Failed to connect to the server';
     throw new Error(errorMessage);
   }
 };
 
-export const updateMarketplaceData = async ({ type, value, orderId, txHash }) => {
+/** IAP not exposed on 0G backend — kept for compatibility; may 404 until added server-side */
+export const updateMarketplaceData = async ({
+  type,
+  value,
+  orderId,
+  txHash,
+}: {
+  type: string;
+  value: string;
+  orderId: string;
+  txHash: string;
+}) => {
   try {
     const response = await api.post('/iap/purchase', {
       category: type,
@@ -234,46 +224,50 @@ export const updateMarketplaceData = async ({ type, value, orderId, txHash }) =>
       orderId,
       txHash,
     });
-    console.log('Marketplace update response:', response.data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Marketplace update failed:', error?.response?.data || error);
     throw error;
   }
 };
 
-export const getMarketplacePurchaseStatus = async ({ orderId, txHash }) => {
+export const getMarketplacePurchaseStatus = async ({
+  orderId,
+  txHash,
+}: {
+  orderId: string;
+  txHash: string;
+}) => {
   try {
-    const response = await api.get('/iap/purchase-status', {
-      params: { orderId, txHash },
-    });
+    const response = await api.get('/iap/purchase-status', { params: { orderId, txHash } });
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Marketplace purchase status failed:', error?.response?.data || error);
     throw error;
   }
 };
 
-export const getPlayerProfile = async (walletAddress) => {
-  if (!walletAddress) throw new Error('walletAddress is required');
+/** GET /player/profile (auth) or GET /player/profile/:wallet (public) */
+export const getPlayerProfile = async (walletAddress?: string | null) => {
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+
   try {
-    const response = await api.get('/', {
-      params: { walletAddress },
-    });
+    if (token) {
+      const response = await api.get('/player/profile');
+      return response.data;
+    }
+    if (!walletAddress) throw new Error('walletAddress is required without auth token');
+    const response = await api.get(`/player/profile/${encodeURIComponent(walletAddress)}`);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch player profile:', error?.response?.data || error);
     throw error;
   }
 };
 
-export const isAuthenticated = () => {
-  return !!localStorage.getItem('walletAddress');
-};
+export const isAuthenticated = () => !!localStorage.getItem('walletAddress') && !!localStorage.getItem('token');
 
-export const getWalletAddress = () => {
-  return localStorage.getItem('walletAddress');
-};
+export const getWalletAddress = () => localStorage.getItem('walletAddress');
 
 export const logout = () => {
   localStorage.removeItem('token');
@@ -289,33 +283,13 @@ export const logout = () => {
   window.location.href = '/';
 };
 
-export const getTournaments = async () => {
-  const response = await fetch(
-    buildApiUrl('/intraverse/tournaments?slug=warzone-warriors&size=20'),
-  );
-  return response.json();
-};
+/** Hardcoded tournaments — no API */
+export const getTournaments = async () => Promise.resolve(getHardcodedTournamentsResponse());
 
-/** Saved coin-delta for this wallet on an active tournament round (no join step). */
-export const getRoundParticipation = async (roundId: string, walletAddress: string) => {
-  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
-  const q = new URLSearchParams({ walletAddress });
-  const res = await fetch(buildApiUrl(`/intraverse/rounds/${encodeURIComponent(roundId)}/participation?${q}`), {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  return res.json();
-};
+/** Round participation not on 0G backend */
+export const getRoundParticipation = async (_roundId: string, _walletAddress: string) =>
+  Promise.resolve({ body: { participation: null } });
 
-export const checkNFTOwnership = async (walletAddress) => {
-  try {
-    const response = await api.get(`/check-nft?wallet=${walletAddress}`);
-    return response.data.hasNFT === true;
-  } catch (error) {
-    console.error('Error checking NFT ownership:', error);
-    throw error;
-  }
-};
+export const checkNFTOwnership = async (_walletAddress: string) => false;
 
 export default api;

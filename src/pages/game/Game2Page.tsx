@@ -3,7 +3,7 @@ import './GamePage.css';
 import './Game2Page.css';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../../contexts/WalletContext';
-import { buildApiUrl } from '../../config/api';
+import { HARDCODED_TOURNAMENTS } from '../../constants/tournaments';
 import { Home, Maximize2, MessageCircle, X } from 'lucide-react';
 import centerImage from "../../assets/images/abc1.png";
 import gameBackground from '../../assets/hero-web3.png';
@@ -58,24 +58,15 @@ export const Game2 = () => {
     return [];
   }
 
-  // Same slug/size as tournament listing so round ids match what users join
   useEffect(() => {
-    fetch(buildApiUrl('/intraverse/tournaments?slug=warzone-warriors&size=20'))
-      .then((r) => r.json())
-      .then((data) => {
-        const list = data?.body?.data || [];
-        const rounds = resolveOpenRounds(list);
-        if (rounds.length === 1) {
-          // Only one option — auto-select it
-          activeRoundIdRef.current = rounds[0].id;
-          setSelectedRound(rounds[0]);
-        } else if (rounds.length > 1) {
-          // Multiple rounds open simultaneously — let the player choose
-          setOpenRounds(rounds);
-          setShowRoundPicker(true);
-        }
-      })
-      .catch(() => {});
+    const rounds = resolveOpenRounds(HARDCODED_TOURNAMENTS);
+    if (rounds.length === 1) {
+      activeRoundIdRef.current = rounds[0].id;
+      setSelectedRound(rounds[0]);
+    } else if (rounds.length > 1) {
+      setOpenRounds(rounds);
+      setShowRoundPicker(true);
+    }
   }, []);
 
   // Listen for GAME_OVER postMessage from the game iframe and submit score
@@ -94,23 +85,12 @@ export const Game2 = () => {
         return;
       }
 
-      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
-      fetch(buildApiUrl('/intraverse/game-point'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          roundId: resolvedRoundId,
-          roomId: roomId || `warzone-${Date.now()}`,
-          score: Number(score) || 0,
-          walletAddress,
-        }),
-      })
-        .then((r) => r.json())
-        .then((data) => console.log('[intraverse] score submitted:', data))
-        .catch((err) => console.error('[intraverse] score submit failed:', err));
+      console.log('[game] GAME_OVER score (local only, no tournament API):', {
+        roundId: resolvedRoundId,
+        roomId: roomId || `warzone-${Date.now()}`,
+        score: Number(score) || 0,
+        walletAddress,
+      });
     };
 
     window.addEventListener('message', handleMessage);
