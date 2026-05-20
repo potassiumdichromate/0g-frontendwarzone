@@ -2,19 +2,29 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import './GamePage.css';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../../contexts/WalletContext';
-import { HARDCODED_TOURNAMENTS } from '../../constants/tournaments';
+import { buildApiUrl } from '../../config/api';
 import { Home, Maximize2, X } from 'lucide-react';
 import centerImage from "../../assets/images/abc1.png";
 import gameBackground from '../../assets/hero-web3.png';
-import ThemedBackButton from '../../components/ThemedBackButton';
+
+const ZG_JWT_KEY = 'ZGJwt';
+
+function getCachedJwt(): string | null {
+  try {
+    const token = localStorage.getItem(ZG_JWT_KEY);
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return Date.now() < (payload.exp * 1000) - 5 * 60 * 1000 ? token : null;
+  } catch {
+    return null;
+  }
+}
 
 export const Game = () => {
   const [isLoading, setIsLoading]   = useState(true);
   const [showIframe, setShowIframe] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [openRounds, setOpenRounds]   = useState([]);   // rounds with active intervals
-  const [selectedRound, setSelectedRound] = useState(null); // { id, name }
-  const [showRoundPicker, setShowRoundPicker] = useState(false);
+  const [zgJwt, setZgJwt] = useState<string | null>(getCachedJwt);
 
   const loadedRef  = useRef(false);
   const iframeRef  = useRef(null);
@@ -24,83 +34,58 @@ export const Game = () => {
   const navigate = useNavigate();
   const { isConnected, address } = useWallet();
 
+
   const walletAddress = address || localStorage.getItem('walletAddress');
   const activeRoundIdRef = useRef(null);
 
-  // Returns all rounds whose interval window contains right now,
-  // plus a single fallback if none are open.
-  function resolveOpenRounds(tournaments) {
-    const now = Date.now();
-    const tournament =
-      tournaments.find((t) => t.status === 'RUNNING') ||
-      tournaments.find((t) => t.status === 'UPCOMING') ||
-      tournaments[0];
+  // ── GAME_OVER postMessage → submit score ──────────────────────────────────
 
-    if (!tournament || !Array.isArray(tournament.rounds)) return [];
-
-    const open = tournament.rounds.filter((round) => {
-      if (!Array.isArray(round.intervals)) return false;
-      return round.intervals.some((iv) => now >= iv.startDate && now <= iv.endDate);
-    });
-
-    if (open.length > 0) {
-      console.log('[intraverse] open rounds by interval:', open.map((r) => r.id));
-      return open;
-    }
-
-    // No interval open right now — fall back to first round
-    const fallback = tournament.rounds[0];
-    if (fallback) {
-      console.log('[intraverse] no open interval, fallback roundId:', fallback.id);
-      return [fallback];
-    }
-    return [];
-  }
-
-  useEffect(() => {
-    const rounds = resolveOpenRounds(HARDCODED_TOURNAMENTS);
-    if (rounds.length === 1) {
-      activeRoundIdRef.current = rounds[0].id;
-      setSelectedRound(rounds[0]);
-    } else if (rounds.length > 1) {
-      setOpenRounds(rounds);
-      setShowRoundPicker(true);
-    }
-  }, []);
-
-  // Listen for GAME_OVER postMessage from the game iframe and submit score
   useEffect(() => {
     const handleMessage = (event) => {
       const { type, score, roomId, roundId } = event.data || {};
       if (type !== 'GAME_OVER') return;
 
       const resolvedRoundId = roundId || activeRoundIdRef.current;
-      if (!resolvedRoundId) {
-        console.warn('[intraverse] GAME_OVER: no roundId available');
-        return;
-      }
-      if (!walletAddress) {
-        console.warn('[intraverse] GAME_OVER: no walletAddress available');
-        return;
-      }
+      if (!resolvedRoundId || !walletAddress) return;
 
-      console.log('[game] GAME_OVER score (local only, no tournament API):', {
-        roundId: resolvedRoundId,
-        roomId: roomId || `warzone-${Date.now()}`,
-        score: Number(score) || 0,
-        walletAddress,
-      });
+      const token = localStorage.getItem('token');
+      fetch(buildApiUrl('/intraverse/game-point'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          roundId: resolvedRoundId,
+          roomId: roomId || `warzone-${Date.now()}`,
+          score: Number(score) || 0,
+          walletAddress,
+        }),
+      })
+        .then((r) => r.json())
+        .then((data) => console.log('[intraverse] score submitted:', data))
+        .catch((err) => console.error('[intraverse] score submit failed:', err));
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [walletAddress]);
-  const GAME_BASE_URL = import.meta.env.VITE_CLOUDFLARE_R2_GAME_URL || 'https://warzonewarriors.xyz/game';
-  const gameUrl = walletAddress
-    ? `${GAME_BASE_URL}?walletAddress=${encodeURIComponent(walletAddress)}`
-    : GAME_BASE_URL;
 
-  /* ── Fullscreen logic — works on all browsers + iOS workaround ── */
+  const GAME_BASE_URL = import.meta.env.VITE_CLOUDFLARE_R2_GAME_URL || 'https://warzonewarriors.xyz/game';
+
+  // Build game URL — walletAddress + jwt so Unity's Root.cs can authenticate
+  const buildGameUrl = useCallback((jwt: string | null) => {
+    if (!walletAddress) return GAME_BASE_URL;
+    let url = `${GAME_BASE_URL}?walletAddress=${encodeURIComponent(walletAddress)}`;
+    const token = jwt || localStorage.getItem(ZG_JWT_KEY);
+    if (token) url += `&jwt=${encodeURIComponent(token)}`;
+    return url;
+  }, [walletAddress, GAME_BASE_URL]);
+
+  const [gameUrl, setGameUrl] = useState(() => buildGameUrl(null));
+
+  /* ── Fullscreen ──────────────────────────────────────────────────────────── */
+
   const requestFullscreen = useCallback(async () => {
     const el = containerRef.current;
     if (!el) return;
@@ -109,10 +94,7 @@ export const Game = () => {
       else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
       else if (el.mozRequestFullScreen)    await el.mozRequestFullScreen();
       else if (el.msRequestFullscreen)     await el.msRequestFullscreen();
-      // iOS Safari doesn't support Fullscreen API — fall back to locking orientation
-      else if (iframeRef.current?.requestFullscreen) {
-        await iframeRef.current.requestFullscreen();
-      }
+      else if (iframeRef.current?.requestFullscreen) await iframeRef.current.requestFullscreen();
     } catch (e) {
       console.warn('Fullscreen request failed:', e);
     }
@@ -134,7 +116,6 @@ export const Game = () => {
     else              requestFullscreen();
   }, [isFullscreen, requestFullscreen, exitFullscreen]);
 
-  /* Track fullscreen state changes from browser UI (e.g. Escape key) */
   useEffect(() => {
     const onChange = () => {
       const fsEl = document.fullscreenElement
@@ -155,11 +136,10 @@ export const Game = () => {
     };
   }, []);
 
-  /* ── Access check + show iframe ── */
+  /* ── Access check + 0G auth + show iframe ───────────────────────────────── */
+
   useEffect(() => {
     if (hasRunRef.current) return;
-    // Don't start until round picker (if needed) is resolved
-    if (showRoundPicker) return;
     hasRunRef.current = true;
 
     if (!isConnected && !walletAddress) {
@@ -168,20 +148,14 @@ export const Game = () => {
       return;
     }
 
+    // Use cached JWT only — never block on a signature request here
+    const jwt = getCachedJwt();
+    if (jwt) setZgJwt(jwt);
+    setGameUrl(buildGameUrl(jwt));
     setShowIframe(true);
-
-    // Fallback: remove loading screen after 6s if iframe onLoad never fires
     const fallback = setTimeout(() => setIsLoading(false), 6000);
     return () => clearTimeout(fallback);
-  }, [isConnected, walletAddress, navigate, showRoundPicker]);
-
-  const handleRoundSelect = (round) => {
-    activeRoundIdRef.current = round.id;
-    setSelectedRound(round);
-    setShowRoundPicker(false);
-    // Reset hasRunRef so the access-check effect fires now that picker is dismissed
-    hasRunRef.current = false;
-  };
+  }, [isConnected, walletAddress, navigate, buildGameUrl]);
 
   const handleIframeLoad = () => {
     loadedRef.current = true;
@@ -196,39 +170,9 @@ export const Game = () => {
       <div className="game-image-bg" aria-hidden="true">
         <img src={gameBackground} alt="" className="game-image-bg-content" />
       </div>
-      {/* Round picker — shown when multiple rounds are simultaneously active */}
-      {showRoundPicker && (
-        <div className="round-picker-overlay">
-          <div className="round-picker-card">
-            <div className="round-picker-title">Choose Your Round</div>
-            <p className="round-picker-subtitle">
-              Multiple tournament rounds are active right now. Pick the one you want to play for.
-            </p>
-            <div className="round-picker-list">
-              {openRounds.map((round) => (
-                <button
-                  key={round.id}
-                  type="button"
-                  className="wz-btn wz-btn--outline wz-btn--block round-picker-item"
-                  onClick={() => handleRoundSelect(round)}
-                >
-                  <span className="round-picker-name">{round.name || `Round ${round.id}`}</span>
-                  <span className="round-picker-arrow">→</span>
-                </button>
-              ))}
-            </div>
-            <ThemedBackButton
-              className="round-picker-back-button"
-              compact
-              label="Back"
-              onClick={() => navigate('/')}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Loading screen */}
-      {!showRoundPicker && isLoading && (
+      {isLoading && (
         <div className="loading-background">
           <div className="center-image">
             <img src={centerImage} alt="Warzone Warriors" className="center-image-content" />
@@ -237,7 +181,7 @@ export const Game = () => {
         </div>
       )}
 
-      {/* Home — top-right, 2 icon-widths from the edge */}
+      {/* Home button */}
       {showIframe && (
         <button
           type="button"
@@ -250,7 +194,7 @@ export const Game = () => {
         </button>
       )}
 
-      {/* Fullscreen — bottom-right; in fullscreen mode → close icon at top-center */}
+      {/* Fullscreen toggle */}
       {showIframe && !isFullscreen && (
         <button
           type="button"
@@ -274,7 +218,7 @@ export const Game = () => {
         </button>
       )}
 
-      {/* Game iframe — full container */}
+      {/* Game iframe — URL includes walletAddress + jwt */}
       {showIframe && (
         <div className="game-iframe-wrapper">
           <iframe
