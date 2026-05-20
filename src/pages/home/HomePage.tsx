@@ -354,27 +354,38 @@ export function HomePage() {
 
           <div className="relative z-10 container mx-auto px-4 pt-20 sm:pt-24">
             <div className="max-w-2xl">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 border border-gold/30 bg-background/60 backdrop-blur-sm"
+
+              {/* Powered by 0G badge */}
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.5 }}
+                className="inline-flex items-center gap-2.5 mb-5 px-4 py-2 rounded-full border border-white/15 bg-black/60 backdrop-blur-sm shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
               >
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
-                </span>
-                <span className="font-russo text-[10px] sm:text-xs tracking-widest text-gold flex items-center gap-1.5">
-                  POWERED BY <img src={zgLogo} alt="0G" className="h-6 sm:h-7 w-auto" />
-                </span>
+                <Crosshair className="w-4 h-4 text-gold" />
+                <span className="font-russo text-[10px] tracking-[0.35em] text-white/70 uppercase">Powered by</span>
+                <img src={zgLogo} alt="0G" className="h-5 w-auto" />
               </motion.div>
 
               <motion.h1 initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15, duration: 0.7 }}
-                className="font-orbitron font-black text-3xl sm:text-6xl md:text-7xl lg:text-8xl mb-5 leading-[1.02]"
+                className="font-orbitron font-black text-3xl sm:text-6xl md:text-7xl lg:text-8xl mb-4 leading-[1.02]"
               >
                 <span className="text-gradient-gold" style={{ filter: "drop-shadow(0 0 30px hsl(42,100%,50%,0.5))" }}>WARZONE</span>
                 <br />
                 <span className="text-foreground">WARRIORS</span>
               </motion.h1>
 
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
+              {/* RUN. GUN. DOMINATE. tagline pill */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}
+                className="inline-flex items-center gap-0 mb-6"
+              >
+                <div className="flex items-center gap-3 px-5 py-2.5 rounded-full border border-gold/40 bg-black/50 backdrop-blur-sm shadow-[0_0_28px_rgba(255,215,60,0.15),inset_0_1px_0_rgba(255,255,255,0.06)]">
+                  <span className="font-orbitron font-black text-sm sm:text-base md:text-lg tracking-[0.25em] text-gold">RUN.</span>
+                  <span className="w-px h-4 bg-gold/30" />
+                  <span className="font-orbitron font-black text-sm sm:text-base md:text-lg tracking-[0.25em] text-gold">GUN.</span>
+                  <span className="w-px h-4 bg-gold/30" />
+                  <span className="font-orbitron font-black text-sm sm:text-base md:text-lg tracking-[0.25em] text-gold">DOMINATE.</span>
+                </div>
+              </motion.div>
+
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
                 className="font-rajdhani text-lg sm:text-xl md:text-2xl text-muted-foreground mb-8 max-w-lg leading-relaxed"
               >
                 The ultimate <span className="text-gold font-bold">Web3 run-and-gun</span> action game.
@@ -382,7 +393,7 @@ export function HomePage() {
               </motion.p>
 
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-                className="inline-grid grid-cols-2 gap-3 mb-10"
+                className="inline-grid grid-cols-2 gap-3 mb-6"
               >
                 <GameButton
                   variant="gold"
@@ -415,12 +426,20 @@ export function HomePage() {
                 </a>
               </motion.div>
 
+              {/* Live stats bar */}
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }}
-                className="flex gap-8 sm:gap-10"
+                className="flex items-center gap-0 rounded-xl border border-white/8 bg-black/40 backdrop-blur-sm overflow-hidden"
               >
-                {/* <HUDStat value="50K+" label="PLAYERS" /> */}
-                {/* <HUDStat value="$2M+" label="EARNED" /> */}
-                {/* <HUDStat value="100K+" label="BATTLES" /> */}
+                {[
+                  { label: "Players Online", icon: Users },
+                  { label: "Live Tournaments", icon: Trophy },
+                  { label: "Battles Fought", icon: Swords },
+                ].map((stat, i) => (
+                  <div key={stat.label} className={`flex-1 flex items-center gap-2.5 px-4 py-3 ${i < 2 ? "border-r border-white/8" : ""}`}>
+                    <stat.icon className="w-3.5 h-3.5 text-gold/60 shrink-0" />
+                    <div className="font-rajdhani text-xs text-white/45 leading-none">{stat.label}</div>
+                  </div>
+                ))}
               </motion.div>
             </div>
           </div>
@@ -475,9 +494,9 @@ export function HomePage() {
 
           <div className="container mx-auto px-4 relative z-10">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12 sm:mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 mb-4 rounded border border-gold/30 bg-card/60">
-                <div className="w-2.5 h-2.5 rounded-full bg-accent" style={{ boxShadow: "0 0 8px hsl(120,80%,45%,0.6)" }} />
-                <span className="font-pixel text-[8px] sm:text-[10px] tracking-widest text-gold">MISSION LOG // ACTIVE</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 mb-4 rounded-full border border-gold/25 bg-gold/5 backdrop-blur-sm">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" style={{ boxShadow: "0 0 8px hsl(120,80%,45%,0.8)" }} />
+                <span className="font-russo text-[9px] tracking-[0.4em] text-gold/80 uppercase">Mission Log — Active</span>
               </div>
               <h2 data-gsap="text-reveal" className="font-orbitron text-3xl sm:text-4xl md:text-6xl font-black mb-4">
                 <span className="text-foreground">YOUR </span>
@@ -491,25 +510,84 @@ export function HomePage() {
               </p>
             </motion.div>
 
-            <div data-gsap="stagger-children" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 max-w-4xl mx-auto">
-              {[
-                { icon: <Swords className="w-6 h-6 sm:w-8 sm:h-8" />, label: "Battle", desc: "PvP combat" },
-                { icon: <Map className="w-6 h-6 sm:w-8 sm:h-8" />, label: "Campaign", desc: "Story missions" },
-                { icon: <Shield className="w-6 h-6 sm:w-8 sm:h-8" />, label: "Armory", desc: "Gear up" },
-                { icon: <Users className="w-6 h-6 sm:w-8 sm:h-8" />, label: "Squad", desc: "Team play" },
-                { icon: <Zap className="w-6 h-6 sm:w-8 sm:h-8" />, label: "Earn", desc: "Real rewards" },
-              ].map((item, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-                  whileHover={{ y: -6, scale: 1.03 }}
-                  className="flex items-center gap-3 p-4 sm:p-5 rounded-xl border border-border bg-card/40 backdrop-blur-sm hover:border-gold/40 transition-all cursor-pointer group"
-                >
-                  <div className="text-gold group-hover:text-foreground transition-colors shrink-0">{item.icon}</div>
-                  <div>
-                    <div className="font-russo text-xs sm:text-sm text-foreground leading-tight">{item.label}</div>
-                    <div className="font-rajdhani text-[10px] sm:text-xs text-muted-foreground">{item.desc}</div>
+            {/* Bento grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto">
+              {/* Featured: Battle — spans 2 cols */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                whileHover={{ y: -4 }}
+                className="col-span-2 sm:col-span-2 relative rounded-2xl border border-gold/25 bg-gradient-to-br from-[#1c1508] to-[#0e0b06] p-6 overflow-hidden cursor-pointer group"
+                style={{ boxShadow: "0 0 40px rgba(255,215,60,0.06)" }}
+              >
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+                <div className="absolute -bottom-6 -right-6 text-[7rem] font-black font-orbitron text-gold/[0.04] leading-none select-none">01</div>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold/10 border border-gold/20 group-hover:bg-gold/15 transition-colors">
+                    <Swords className="w-6 h-6 text-gold" />
                   </div>
-                </motion.div>
-              ))}
+                  <div>
+                    <p className="font-russo text-[10px] tracking-[0.35em] text-gold/60 mb-1">01 — COMBAT</p>
+                    <h3 className="font-orbitron text-xl font-black text-foreground mb-2">BATTLE</h3>
+                    <p className="font-rajdhani text-sm text-muted-foreground leading-relaxed max-w-sm">Engage in real-time PvP combat. Every hit counts, every move matters. Rise through the ranks to earn your place.</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Campaign */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }}
+                whileHover={{ y: -4 }}
+                className="relative rounded-2xl border border-border/60 bg-card/30 p-5 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
+              >
+                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-white/[0.03] leading-none select-none">02</div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/60 border border-border mb-4 group-hover:border-gold/30 transition-colors">
+                  <Map className="w-5 h-5 text-gold/80" />
+                </div>
+                <p className="font-russo text-[9px] tracking-[0.3em] text-muted-foreground mb-1">02</p>
+                <h3 className="font-orbitron text-base font-black text-foreground mb-1.5">CAMPAIGN</h3>
+                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Epic story-driven missions across dangerous zones.</p>
+              </motion.div>
+
+              {/* Armory */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.12 }}
+                whileHover={{ y: -4 }}
+                className="relative rounded-2xl border border-border/60 bg-card/30 p-5 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
+              >
+                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-white/[0.03] leading-none select-none">03</div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/60 border border-border mb-4 group-hover:border-gold/30 transition-colors">
+                  <Shield className="w-5 h-5 text-gold/80" />
+                </div>
+                <p className="font-russo text-[9px] tracking-[0.3em] text-muted-foreground mb-1">03</p>
+                <h3 className="font-orbitron text-base font-black text-foreground mb-1.5">ARMORY</h3>
+                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Unlock and upgrade lethal weapons and gear.</p>
+              </motion.div>
+
+              {/* Squad */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }}
+                whileHover={{ y: -4 }}
+                className="relative rounded-2xl border border-border/60 bg-card/30 p-5 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
+              >
+                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-white/[0.03] leading-none select-none">04</div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card/60 border border-border mb-4 group-hover:border-gold/30 transition-colors">
+                  <Users className="w-5 h-5 text-gold/80" />
+                </div>
+                <p className="font-russo text-[9px] tracking-[0.3em] text-muted-foreground mb-1">04</p>
+                <h3 className="font-orbitron text-base font-black text-foreground mb-1.5">SQUAD</h3>
+                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Team up with allies and dominate together.</p>
+              </motion.div>
+
+              {/* Earn — featured, spans 2 cols on sm */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
+                whileHover={{ y: -4 }}
+                className="col-span-2 sm:col-span-1 relative rounded-2xl border border-green-500/20 p-5 overflow-hidden cursor-pointer group hover:border-green-400/30 transition-all"
+                style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.05) 0%, rgba(14,11,6,0.9) 60%)" }}
+              >
+                <div className="absolute -bottom-4 -right-4 text-[4.5rem] font-black font-orbitron text-green-400/[0.06] leading-none select-none">05</div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl mb-4" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                  <Zap className="w-5 h-5 text-green-400" />
+                </div>
+                <p className="font-russo text-[9px] tracking-[0.3em] text-green-400/60 mb-1">05</p>
+                <h3 className="font-orbitron text-base font-black text-green-300 mb-1.5">EARN</h3>
+                <p className="font-rajdhani text-xs text-muted-foreground leading-relaxed">Real Web3 rewards for every win, on-chain.</p>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -726,34 +804,68 @@ export function HomePage() {
           />
 
           <div className="container mx-auto px-4 relative z-10">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10 sm:mb-14">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10 sm:mb-12">
+              <p className="font-russo text-[10px] tracking-[0.4em] text-gold/70 mb-3 uppercase">Hall of Fame</p>
               <h2 data-gsap="text-reveal" className="font-orbitron text-3xl sm:text-4xl md:text-5xl font-black">
                 <span className="text-foreground">TOP </span>
                 <span className="text-gradient-gold">WARRIORS</span>
               </h2>
             </motion.div>
 
-            <div data-gsap="stagger-children" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 max-w-4xl mx-auto mb-10">
-              {topPlayers.map((player, i) => (
-                <motion.div key={player.rank} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-                  whileHover={{ y: -6, scale: 1.02 }}
-                  className={`rounded-xl p-4 sm:p-5 text-center border-2 transition-all cursor-pointer ${
-                    player.rank === 1 
-                      ? "border-gold/50 bg-gold/5 shadow-lg shadow-gold/10" 
-                      : player.rank <= 3
-                        ? "border-primary/30 bg-primary/5"
-                        : "border-metal/40 bg-card/40 hover:border-gold/30"
-                  }`}
-                >
-                  <div className="text-2xl sm:text-3xl mb-2">
-                    {player.rank === 1 ? "👑" : player.rank === 2 ? "🥈" : player.rank === 3 ? "🥉" : (
-                      <span className="font-orbitron text-base font-bold text-muted-foreground">#{player.rank}</span>
-                    )}
+            <div className="max-w-3xl mx-auto mb-10 space-y-3">
+              {/* Rank 1 Champion Spotlight */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                className="relative rounded-2xl overflow-hidden"
+                style={{ background: "linear-gradient(120deg, #1f1608 0%, #2a1e0a 40%, #0e0b06 100%)", boxShadow: "0 0 60px rgba(255,215,60,0.12), 0 0 0 1px rgba(255,215,60,0.2)" }}
+              >
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(255,215,60,0.12),_transparent_55%)]" />
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
+                <div className="relative flex items-center gap-5 p-5 sm:p-6">
+                  {/* Rank */}
+                  <div className="shrink-0 flex flex-col items-center justify-center w-14 h-14 rounded-2xl border border-gold/30 bg-gold/10"
+                    style={{ boxShadow: "0 0 20px rgba(255,215,60,0.15)" }}>
+                    <Crown className="w-5 h-5 text-gold mb-0.5" />
+                    <span className="font-orbitron text-[9px] font-black text-gold/80">#1</span>
                   </div>
-                  <div className="font-russo text-xs sm:text-sm text-foreground truncate mb-2">{player.name}</div>
-                  <div className="flex items-center justify-center gap-1.5">
+                  {/* Name & badge */}
+                  <div className="flex-1 min-w-0">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gold/10 border border-gold/20 mb-1.5">
+                      <span className="font-russo text-[8px] tracking-[0.35em] text-gold/70 uppercase">Champion</span>
+                    </div>
+                    <div className="font-orbitron text-xl sm:text-2xl font-black text-gold truncate" style={{ textShadow: "0 0 20px rgba(255,215,60,0.4)" }}>
+                      {topPlayers[0].name}
+                    </div>
+                  </div>
+                  {/* Score */}
+                  <div className="shrink-0 text-right">
+                    <div className="font-russo text-[9px] tracking-widest text-muted-foreground mb-1 uppercase">Coins</div>
+                    <div className="flex items-center gap-2">
+                      <img src={iconCoins} alt="" className="w-5 h-5" loading="lazy" />
+                      <span className="font-orbitron text-base sm:text-lg font-black text-gold">{topPlayers[0].coins.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Ranks 2–5: compact list */}
+              {topPlayers.slice(1).map((player, i) => (
+                <motion.div key={player.rank}
+                  initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
+                  whileHover={{ x: 4 }}
+                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-card/25 px-5 py-3.5 hover:border-gold/25 hover:bg-card/40 transition-all cursor-pointer"
+                >
+                  <span className={`font-orbitron text-sm font-black w-6 text-center shrink-0 ${
+                    player.rank === 2 ? "text-slate-300" : player.rank === 3 ? "text-amber-600" : "text-muted-foreground/50"
+                  }`}>
+                    #{player.rank}
+                  </span>
+                  <div className={`w-1 h-6 rounded-full shrink-0 ${
+                    player.rank === 2 ? "bg-slate-400/60" : player.rank === 3 ? "bg-amber-700/60" : "bg-border"
+                  }`} />
+                  <span className="font-russo text-sm text-foreground flex-1 truncate">{player.name}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <img src={iconCoins} alt="" className="w-4 h-4" loading="lazy" />
-                    <span className="font-orbitron text-[10px] sm:text-xs font-bold text-gradient-gold">{player.coins.toLocaleString()}</span>
+                    <span className="font-orbitron text-xs font-bold text-gold/80">{player.coins.toLocaleString()}</span>
                   </div>
                 </motion.div>
               ))}
@@ -820,66 +932,91 @@ export function HomePage() {
                   const fmtDate = (ms?: number) => ms ? new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "TBA";
 
                   return (
-                    <motion.div key={String(t.id)} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                      whileHover={{ y: -8, scale: 1.02 }}
-                      className="group"
+                    <motion.div key={String(t.id)} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                      whileHover={{ y: -6 }}
+                      className="group cursor-pointer"
                     >
-                        <div className={`rounded-2xl overflow-hidden border transition-all duration-300 ${
+                      <Link to="/tournament">
+                        <div className={`rounded-2xl overflow-hidden border transition-all duration-300 h-full flex flex-col ${
                           isLive
-                            ? "border-gold/45 shadow-[0_0_35px_rgba(255,198,71,0.18)]"
+                            ? "border-gold/40 shadow-[0_8px_40px_rgba(255,198,71,0.15),0_0_0_1px_rgba(255,198,71,0.1)]"
                             : isPastTournament
-                              ? "border-border/60"
-                              : "border-border/80 hover:border-gold/35 hover:shadow-[0_0_28px_rgba(255,198,71,0.14)]"
-                        }`} style={{
-                          background: "linear-gradient(180deg, rgba(34,24,16,0.96) 0%, rgba(14,11,10,0.98) 100%)",
-                        }}>
-                          {/* Image */}
-                          <div className="relative h-40 sm:h-48 overflow-hidden">
+                              ? "border-white/8"
+                              : "border-white/10 hover:border-gold/30 hover:shadow-[0_8px_40px_rgba(255,198,71,0.10)]"
+                        }`} style={{ background: "linear-gradient(160deg, #1a130a 0%, #0d0a07 100%)" }}>
+
+                          {/* Image area */}
+                          <div className="relative h-44 sm:h-52 overflow-hidden shrink-0">
                             <img
                               src={t.image}
                               alt={t.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                               loading="lazy"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/55 to-transparent" />
-                            <div className="absolute top-3 left-3 flex items-center gap-2">
-                              <span className={`px-2.5 py-1 rounded-full font-russo text-[10px] tracking-widest ${
-                                isLive
-                                  ? "bg-gold text-background"
-                                  : isPastTournament
-                                    ? "bg-rose-500/20 border border-rose-400/40 text-rose-200"
-                                    : "bg-sky-500/20 border border-sky-400/40 text-sky-200"
-                              }`}>
-                                {isLive && <Crown className="w-3 h-3 inline mr-1" />}
-                                {displayStatus}
-                              </span>
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0d0a07] via-[#0d0a07]/40 to-transparent" />
+                            {/* Top-left status badge */}
+                            <div className="absolute top-3 left-3">
+                              {isLive ? (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold text-background shadow-[0_0_16px_rgba(255,215,60,0.5)]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-background animate-pulse" />
+                                  <span className="font-russo text-[9px] tracking-[0.3em] font-bold">LIVE</span>
+                                </div>
+                              ) : isPastTournament ? (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-black/50 backdrop-blur-sm">
+                                  <span className="font-russo text-[9px] tracking-[0.3em] text-white/50">ENDED</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 backdrop-blur-sm">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                                  <span className="font-russo text-[9px] tracking-[0.3em] text-sky-300">UPCOMING</span>
+                                </div>
+                              )}
                             </div>
-                            <div className="absolute inset-x-0 bottom-0 p-4">
-                              <h3 className="font-orbitron text-lg font-bold text-foreground truncate">{t.name}</h3>
-                              <p className="font-rajdhani text-xs text-muted-foreground">{fmtDate(t.startDate)} – {fmtDate(t.endDate)}</p>
-                            </div>
+                            {/* Rounds badge top-right */}
+                            {roundCount > 0 && (
+                              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full border border-white/12 bg-black/50 backdrop-blur-sm">
+                                <span className="font-russo text-[9px] text-white/50 tracking-widest">{roundCount} RDS</span>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Info */}
-                          <div className="p-4 sm:p-5">
-                            <div className="grid grid-cols-2 gap-2.5 mb-3">
-                              <div className="rounded-xl border border-border/70 bg-background/35 px-3 py-2.5">
-                                <div className="font-russo text-[9px] tracking-widest text-muted-foreground">ROUNDS</div>
-                                <div className="font-orbitron text-sm font-bold text-foreground">{roundCount}</div>
-                              </div>
-                              <div className="rounded-xl border border-border/70 bg-background/35 px-3 py-2.5">
-                                <div className="font-russo text-[9px] tracking-widest text-muted-foreground">STATUS</div>
-                                <div className={`font-orbitron text-sm font-bold ${isLive ? "text-gold" : isPastTournament ? "text-rose-300" : "text-sky-300"}`}>
-                                  {displayStatus}
-                                </div>
-                              </div>
+                          {/* Card body */}
+                          <div className="flex flex-col flex-1 p-4 sm:p-5">
+                            {/* Name */}
+                            <h3 className="font-orbitron text-base sm:text-lg font-black text-foreground leading-tight mb-2 truncate group-hover:text-gold transition-colors duration-200">
+                              {t.name}
+                            </h3>
+
+                            {/* Date range */}
+                            <div className="flex items-center gap-1.5 mb-4">
+                              <CalendarDays className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+                              <span className="font-rajdhani text-xs text-muted-foreground">
+                                {fmtDate(t.startDate)} — {fmtDate(t.endDate)}
+                              </span>
                             </div>
-                            <div className="flex items-center justify-between border-t border-border/50 pt-3">
-                              <span className="font-rajdhani text-xs text-muted-foreground">Live on home</span>
-                              <Crown className="w-4 h-4 text-gold opacity-70" />
+
+                            {/* Divider */}
+                            <div className="h-px bg-white/6 mb-4" />
+
+                            {/* CTA row */}
+                            <div className="flex items-center justify-between mt-auto">
+                              <span className={`font-russo text-[10px] tracking-[0.3em] ${
+                                isLive ? "text-gold" : isPastTournament ? "text-white/30" : "text-sky-400/70"
+                              }`}>
+                                {isLive ? "ENTER NOW" : isPastTournament ? "VIEW RESULTS" : "REGISTER"}
+                              </span>
+                              <div className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-200 ${
+                                isLive
+                                  ? "border-gold/40 bg-gold/10 group-hover:bg-gold/20"
+                                  : "border-white/12 bg-white/5 group-hover:border-gold/30 group-hover:bg-gold/8"
+                              }`}>
+                                <ArrowRight className={`w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5 ${isLive ? "text-gold" : "text-white/50 group-hover:text-gold/70"}`} />
+                              </div>
                             </div>
                           </div>
                         </div>
+                      </Link>
                     </motion.div>
                   );
                 })}
