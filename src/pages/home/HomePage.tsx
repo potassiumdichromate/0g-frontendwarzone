@@ -525,7 +525,7 @@ export function HomePage() {
               >
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
                 <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-gold/[0.04] leading-none select-none pointer-events-none">01</div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col items-center text-center">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-gold/10 border border-gold/20 mb-1.5 sm:mb-2 group-hover:bg-gold/15 transition-colors">
                     <Swords className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold" />
                   </div>
@@ -541,7 +541,7 @@ export function HomePage() {
                 className="relative min-w-0 rounded-lg sm:rounded-xl border border-border/60 bg-card/30 p-2 sm:p-3 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
               >
                 <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-white/[0.03] leading-none select-none pointer-events-none">02</div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col items-center text-center">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-card/60 border border-border mb-1.5 sm:mb-2 group-hover:border-gold/30 transition-colors">
                     <Map className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold/80" />
                   </div>
@@ -557,7 +557,7 @@ export function HomePage() {
                 className="relative min-w-0 rounded-lg sm:rounded-xl border border-border/60 bg-card/30 p-2 sm:p-3 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
               >
                 <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-white/[0.03] leading-none select-none pointer-events-none">03</div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col items-center text-center">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-card/60 border border-border mb-1.5 sm:mb-2 group-hover:border-gold/30 transition-colors">
                     <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold/80" />
                   </div>
@@ -573,7 +573,7 @@ export function HomePage() {
                 className="relative min-w-0 rounded-lg sm:rounded-xl border border-border/60 bg-card/30 p-2 sm:p-3 overflow-hidden cursor-pointer group hover:border-gold/30 transition-all"
               >
                 <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-white/[0.03] leading-none select-none pointer-events-none">04</div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col items-center text-center">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg bg-card/60 border border-border mb-1.5 sm:mb-2 group-hover:border-gold/30 transition-colors">
                     <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold/80" />
                   </div>
@@ -590,7 +590,7 @@ export function HomePage() {
                 style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.05) 0%, rgba(14,11,6,0.9) 60%)" }}
               >
                 <div className="absolute -bottom-2 -right-1 text-[2rem] sm:text-[2.75rem] font-black font-orbitron text-green-400/[0.06] leading-none select-none pointer-events-none">05</div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col items-center text-center">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg mb-1.5 sm:mb-2" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}>
                     <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" />
                   </div>

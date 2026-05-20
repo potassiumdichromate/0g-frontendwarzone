@@ -2,29 +2,89 @@ import type { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, UserCircle, Lock, Box } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { getNetworkStatus } from '@/api/zerog';
 import zgLogo from '@/assets/0G-white-logo.png';
 
-type InfraItemProps = {
+type InfraCardProps = {
   icon: LucideIcon;
   title: string;
   sub: React.ReactNode;
+  badge?: React.ReactNode;
+  delay?: number;
+  accent?: 'gold' | 'green' | 'blue' | 'purple';
 };
 
-function InfraItem({ icon: Icon, title, sub }: InfraItemProps) {
+const ACCENT_STYLES = {
+  gold: {
+    border: 'border-gold/30',
+    iconBg: 'bg-gold/10 border-gold/25',
+    iconColor: 'text-gold',
+    glow: '0 0 40px rgba(255,215,60,0.1)',
+    badgeBorder: 'border-gold/25 bg-gold/8 text-gold/90',
+    subColor: 'text-gold/70',
+    topLine: 'via-gold/50',
+  },
+  green: {
+    border: 'border-green-500/30',
+    iconBg: 'bg-green-500/10 border-green-500/25',
+    iconColor: 'text-green-400',
+    glow: '0 0 40px rgba(34,197,94,0.08)',
+    badgeBorder: 'border-green-500/25 bg-green-500/8 text-green-400/90',
+    subColor: 'text-green-400/70',
+    topLine: 'via-green-500/40',
+  },
+  blue: {
+    border: 'border-blue-400/30',
+    iconBg: 'bg-blue-400/10 border-blue-400/25',
+    iconColor: 'text-blue-300',
+    glow: '0 0 40px rgba(96,165,250,0.08)',
+    badgeBorder: 'border-blue-400/25 bg-blue-400/8 text-blue-300/90',
+    subColor: 'text-blue-300/70',
+    topLine: 'via-blue-400/40',
+  },
+  purple: {
+    border: 'border-purple-400/30',
+    iconBg: 'bg-purple-400/10 border-purple-400/25',
+    iconColor: 'text-purple-300',
+    glow: '0 0 40px rgba(192,132,252,0.08)',
+    badgeBorder: 'border-purple-400/25 bg-purple-400/8 text-purple-300/90',
+    subColor: 'text-purple-300/70',
+    topLine: 'via-purple-400/40',
+  },
+};
+
+function InfraCard({ icon: Icon, title, sub, badge, delay = 0, accent = 'gold' }: InfraCardProps) {
+  const s = ACCENT_STYLES[accent];
   return (
-    <div className="flex flex-col items-center text-center gap-2.5 sm:gap-3 group">
-      <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl grid place-items-center border border-gold/20 bg-gold/10 text-gold transition-colors group-hover:border-gold/35 group-hover:bg-gold/15 shadow-[0_0_20px_rgba(255,215,60,0.08)]">
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.75} />
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.45, delay }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className={`relative rounded-2xl border ${s.border} overflow-hidden bg-gradient-to-br from-[#1c1508] to-[#0e0b06] flex flex-col items-center text-center p-6 sm:p-8 gap-4 group cursor-default`}
+      style={{ boxShadow: s.glow }}
+    >
+      <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent ${s.topLine} to-transparent`} />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent pointer-events-none" />
+
+      <div
+        className={`relative z-10 h-16 w-16 sm:h-20 sm:w-20 rounded-2xl grid place-items-center border ${s.iconBg} ${s.iconColor} transition-all group-hover:scale-110`}
+        style={{ boxShadow: `0 0 24px ${accent === 'gold' ? 'rgba(255,215,60,0.15)' : accent === 'green' ? 'rgba(34,197,94,0.12)' : accent === 'blue' ? 'rgba(96,165,250,0.12)' : 'rgba(192,132,252,0.12)'}` }}
+      >
+        <Icon className="w-8 h-8 sm:w-9 sm:h-9" strokeWidth={1.5} />
       </div>
-      <div className="font-orbitron text-[10px] sm:text-xs font-bold tracking-wider text-foreground uppercase">
-        {title}
+
+      <div className="relative z-10 flex flex-col items-center gap-2">
+        <div className="font-orbitron text-base sm:text-lg md:text-xl font-black tracking-wider text-foreground uppercase">
+          {title}
+        </div>
+        {badge && <div className="inline-flex">{badge}</div>}
+        <div className={`font-rajdhani text-sm sm:text-base ${s.subColor} flex items-center justify-center gap-1.5 font-semibold`}>
+          {sub}
+        </div>
       </div>
-      <div className="font-rajdhani text-[10px] sm:text-xs text-gold/60 flex items-center justify-center gap-1">
-        {sub}
-      </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -51,78 +111,89 @@ export function ZeroGInfrastructureStatus({ className = '' }: ZeroGInfrastructur
       transition={{ duration: 0.45 }}
       className={className}
     >
-      <div
-        className="relative rounded-2xl sm:rounded-3xl border border-gold/25 overflow-hidden bg-gradient-to-br from-[#1c1508] to-[#0e0b06]"
-        style={{ boxShadow: '0 0 40px rgba(255, 215, 60, 0.06)' }}
-      >
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-
-        {/* Subtle speckle texture */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-50"
-          style={{
-            backgroundImage: `
-              radial-gradient(1px 1px at 20% 30%, rgba(255,215,60,0.15) 50%, transparent 100%),
-              radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.12) 50%, transparent 100%),
-              radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.08) 50%, transparent 100%),
-              radial-gradient(1.5px 1.5px at 40% 80%, rgba(255,198,71,0.2) 50%, transparent 100%),
-              radial-gradient(1px 1px at 90% 50%, rgba(255,255,255,0.1) 50%, transparent 100%)
-            `,
-            backgroundSize: '100% 100%',
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-gold/[0.03] via-transparent to-transparent pointer-events-none" />
-
-        <div className="relative z-10 px-5 py-6 sm:px-8 sm:py-8">
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
-            <img src={zgLogo} alt="0G" className="h-4 sm:h-5 w-auto opacity-90" />
-            <div className="font-russo text-[10px] sm:text-xs tracking-[0.35em] text-gold/80 uppercase">
-              Infrastructure Status
-            </div>
-            {network && (
-              <span
-                className={`ml-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-russo text-[8px] tracking-widest uppercase border ${
-                  networkOk
-                    ? 'border-gold/25 bg-gold/5 text-gold/90'
-                    : 'border-primary/30 bg-primary/10 text-primary'
-                }`}
-              >
-                {networkOk && (
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0"
-                    style={{ boxShadow: '0 0 6px hsl(120, 80%, 45%, 0.8)' }}
-                  />
-                )}
-                {networkOk ? 'Live' : String(network.overall)}
-              </span>
-            )}
+      {/* Header */}
+      <div className="flex flex-col items-center gap-3 mb-8 sm:mb-10">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+          <img src={zgLogo} alt="0G" className="h-8 sm:h-10 md:h-12 w-auto opacity-95" />
+          <div className="font-russo text-xl sm:text-2xl md:text-3xl tracking-[0.2em] text-gold/90 uppercase">
+            Infrastructure Status
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-4 md:gap-6">
-            <InfraItem icon={ShieldCheck} title="Verified" sub={daSub} />
-            <InfraItem
-              icon={UserCircle}
-              title="Identity"
-              sub={
-                <>
-                  <img src={zgLogo} alt="" className="h-2.5 sm:h-3 w-auto opacity-80" aria-hidden />
-                  Native
-                </>
-              }
-            />
-            <InfraItem icon={Lock} title="Secured" sub="On-Chain" />
-            <InfraItem icon={Box} title="Storage" sub="Decentralized" />
-          </div>
-
-          <div className="mt-6 sm:mt-8 text-center">
-            <Link
-              to="/og-dashboard"
-              className="font-russo text-[10px] sm:text-xs tracking-widest text-gold/70 hover:text-gold transition-colors uppercase"
+          {network && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-russo text-[9px] tracking-widest uppercase border ${
+                networkOk
+                  ? 'border-gold/25 bg-gold/8 text-gold/90'
+                  : 'border-primary/30 bg-primary/10 text-primary'
+              }`}
             >
-              Open 0G Dashboard →
-            </Link>
-          </div>
+              {networkOk && (
+                <span
+                  className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0"
+                  style={{ boxShadow: '0 0 8px hsl(120, 80%, 45%, 0.9)' }}
+                />
+              )}
+              {networkOk ? 'Live' : String(network.overall)}
+            </span>
+          )}
         </div>
+      </div>
+
+      {/* 4 Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+        <InfraCard
+          icon={ShieldCheck}
+          title="Verified"
+          sub={daSub}
+          accent="gold"
+          delay={0}
+          badge={
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-russo text-[8px] tracking-widest uppercase border border-gold/25 bg-gold/8 text-gold/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" style={{ boxShadow: '0 0 6px rgba(74,222,128,0.8)' }} />
+              Active
+            </span>
+          }
+        />
+        <InfraCard
+          icon={UserCircle}
+          title="Identity"
+          sub={
+            <span className="flex items-center gap-1.5">
+              <img src={zgLogo} alt="" className="h-3.5 sm:h-4 w-auto opacity-80" aria-hidden />
+              Native
+            </span>
+          }
+          accent="blue"
+          delay={0.08}
+          badge={
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-russo text-[8px] tracking-widest uppercase border border-blue-400/25 bg-blue-400/8 text-blue-300/80">
+              On-Chain
+            </span>
+          }
+        />
+        <InfraCard
+          icon={Lock}
+          title="Secured"
+          sub="On-Chain"
+          accent="purple"
+          delay={0.16}
+          badge={
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-russo text-[8px] tracking-widest uppercase border border-purple-400/25 bg-purple-400/8 text-purple-300/80">
+              Protected
+            </span>
+          }
+        />
+        <InfraCard
+          icon={Box}
+          title="Storage"
+          sub="Decentralized"
+          accent="green"
+          delay={0.24}
+          badge={
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-russo text-[8px] tracking-widest uppercase border border-green-500/25 bg-green-500/8 text-green-400/80">
+              Distributed
+            </span>
+          }
+        />
       </div>
     </motion.div>
   );
