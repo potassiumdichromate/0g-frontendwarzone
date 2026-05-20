@@ -689,10 +689,10 @@ export default function OGDashboard() {
               </div>
               {globalStats ? (
                 <div className="grid grid-cols-2 gap-2">
-                  <StatCard value={globalStats.totalPlayers.toLocaleString()}  label="TOTAL PLAYERS"  icon={Users}     />
-                  <StatCard value={globalStats.totalSaves.toLocaleString()}     label="TOTAL SAVES"    icon={Database}  />
-                  <StatCard value={globalStats.finalizedSaves.toLocaleString()} label="DA FINALIZED"  icon={CheckCircle} />
-                  <StatCard value={`${globalStats.averageTrustScore.toFixed(1)}`} label="AVG TRUST"   icon={Shield}    />
+                  <StatCard value={(globalStats.totalPlayers ?? 0).toLocaleString()}  label="TOTAL PLAYERS"  icon={Users}     />
+                  <StatCard value={(globalStats.totalSaves ?? 0).toLocaleString()}     label="TOTAL SAVES"    icon={Database}  />
+                  <StatCard value={(globalStats.finalizedSaves ?? 0).toLocaleString()} label="DA FINALIZED"  icon={CheckCircle} />
+                  <StatCard value={`${(globalStats.averageTrustScore ?? 0).toFixed(1)}`} label="AVG TRUST"   icon={Shield}    />
                 </div>
               ) : (
                 <div className="text-center py-6">
@@ -766,10 +766,10 @@ export default function OGDashboard() {
                 <Label>AI ANTI-CHEAT COMPUTE</Label>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard value={computeStats.totalSessions.toLocaleString()}    label="TOTAL SESSIONS"    icon={Activity}  />
-                <StatCard value={computeStats.analyzedSessions.toLocaleString()} label="ANALYZED"         icon={Shield}    />
-                <StatCard value={computeStats.flaggedSessions.toLocaleString()}  label="FLAGGED"          icon={XCircle}   />
-                <StatCard value={`${(computeStats.anomalyRate * 100).toFixed(2)}%`} label="ANOMALY RATE" icon={Zap} highlight={computeStats.anomalyRate > 0.05} />
+                <StatCard value={(computeStats.totalSessions ?? 0).toLocaleString()}    label="TOTAL SESSIONS"    icon={Activity}  />
+                <StatCard value={(computeStats.analyzedSessions ?? 0).toLocaleString()} label="ANALYZED"         icon={Shield}    />
+                <StatCard value={(computeStats.flaggedSessions ?? 0).toLocaleString()}  label="FLAGGED"          icon={XCircle}   />
+                <StatCard value={`${((computeStats.anomalyRate ?? 0) * 100).toFixed(2)}%`} label="ANOMALY RATE" icon={Zap} highlight={(computeStats.anomalyRate ?? 0) > 0.05} />
               </div>
               {computeStats.lastProcessed && (
                 <div className="font-russo text-[9px] text-muted-foreground/50 mt-3 tracking-wider">
@@ -1039,10 +1039,10 @@ export default function OGDashboard() {
                             <TrustBadge label={entry.trustBadge?.toLowerCase()} />
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <span className="font-orbitron font-bold text-sm text-gold">{entry.trustScore}</span>
+                            <span className="font-orbitron font-bold text-sm text-gold">{entry.trustScore ?? '—'}</span>
                           </td>
                           <td className="px-4 py-3 text-right hidden sm:table-cell">
-                            <span className="font-rajdhani text-sm text-muted-foreground">{entry.verifiedSaves}</span>
+                            <span className="font-rajdhani text-sm text-muted-foreground">{entry.verifiedSaves ?? 0}</span>
                           </td>
                           <td className="px-4 py-3 text-right hidden md:table-cell">
                             <span className="font-rajdhani text-xs text-muted-foreground">{entry.lastSave ? timeAgo(entry.lastSave) : '—'}</span>
