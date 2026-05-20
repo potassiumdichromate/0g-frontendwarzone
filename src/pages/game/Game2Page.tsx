@@ -29,9 +29,6 @@ export const Game2 = () => {
   const [isLoading, setIsLoading]   = useState(true);
   const [showIframe, setShowIframe] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [openRounds, setOpenRounds]   = useState([]);
-  const [selectedRound, setSelectedRound] = useState(null);
-  const [showRoundPicker, setShowRoundPicker] = useState(false);
   const [zgJwt, setZgJwt] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
@@ -78,44 +75,6 @@ export const Game2 = () => {
       return null;
     }
   }, [signMessageAsync]);
-
-  // ── Tournament rounds ─────────────────────────────────────────────────────
-
-  function resolveOpenRounds(tournaments) {
-    const now = Date.now();
-    const tournament =
-      tournaments.find((t) => t.status === 'RUNNING') ||
-      tournaments.find((t) => t.status === 'UPCOMING') ||
-      tournaments[0];
-
-    if (!tournament || !Array.isArray(tournament.rounds)) return [];
-
-    const open = tournament.rounds.filter((round) => {
-      if (!Array.isArray(round.intervals)) return false;
-      return round.intervals.some((iv) => now >= iv.startDate && now <= iv.endDate);
-    });
-
-    if (open.length > 0) return open;
-    const fallback = tournament.rounds[0];
-    return fallback ? [fallback] : [];
-  }
-
-  useEffect(() => {
-    fetch(buildApiUrl('/intraverse/tournaments?slug=warzone-warriors&size=20'))
-      .then((r) => r.json())
-      .then((data) => {
-        const list = data?.body?.data || [];
-        const rounds = resolveOpenRounds(list);
-        if (rounds.length === 1) {
-          activeRoundIdRef.current = rounds[0].id;
-          setSelectedRound(rounds[0]);
-        } else if (rounds.length > 1) {
-          setOpenRounds(rounds);
-          setShowRoundPicker(true);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   // ── GAME_OVER postMessage → submit score ──────────────────────────────────
 
@@ -235,7 +194,6 @@ export const Game2 = () => {
 
   useEffect(() => {
     if (hasRunRef.current) return;
-    if (showRoundPicker) return;
     hasRunRef.current = true;
 
     if (!isConnected && !walletAddress) {
@@ -265,14 +223,7 @@ export const Game2 = () => {
       cancelled = true;
       if (fallback) clearTimeout(fallback);
     };
-  }, [isConnected, walletAddress, navigate, showRoundPicker, doZGAuth, buildGameUrl]);
-
-  const handleRoundSelect = (round) => {
-    activeRoundIdRef.current = round.id;
-    setSelectedRound(round);
-    setShowRoundPicker(false);
-    hasRunRef.current = false;
-  };
+  }, [isConnected, walletAddress, navigate, doZGAuth, buildGameUrl]);
 
   const handleIframeLoad = () => {
     loadedRef.current = true;
@@ -293,39 +244,8 @@ export const Game2 = () => {
         <img src={gameBackground} alt="" className="game-image-bg-content" />
       </div>
 
-      {/* Round picker */}
-      {showRoundPicker && (
-        <div className="round-picker-overlay">
-          <div className="round-picker-card">
-            <div className="round-picker-title">Choose Your Round</div>
-            <p className="round-picker-subtitle">
-              Multiple tournament rounds are active right now. Pick the one you want to play for.
-            </p>
-            <div className="round-picker-list">
-              {openRounds.map((round) => (
-                <button
-                  key={round.id}
-                  type="button"
-                  className="wz-btn wz-btn--outline wz-btn--block round-picker-item"
-                  onClick={() => handleRoundSelect(round)}
-                >
-                  <span className="round-picker-name">{round.name || `Round ${round.id}`}</span>
-                  <span className="round-picker-arrow">→</span>
-                </button>
-              ))}
-            </div>
-            <ThemedBackButton
-              className="round-picker-back-button"
-              compact
-              label="Back"
-              onClick={() => navigate('/')}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Loading screen */}
-      {!showRoundPicker && isLoading && (
+      {isLoading && (
         <div className="loading-background">
           <div className="center-image">
             <img src={centerImage} alt="Warzone Warriors" className="center-image-content" />
