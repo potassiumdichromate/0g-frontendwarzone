@@ -15,6 +15,7 @@ import { WARRIOR_CHARACTERS } from "@/constants/characters";
 import { ZeroGInfrastructureStatus } from "@/components/zerog/ZeroGInfrastructureStatus";
 
 import iconCoins from "@/assets/icon-coins.png";
+import iconGems from "@/assets/icon-gems.png";
 
 import marketplaceGuns from "@/assets/marketplace-guns.png";
 import soldierCard from "@/assets/soldier-card-1-clean.png";
@@ -73,6 +74,30 @@ export function HomePage() {
   const tournamentsLoading = false;
   const [currentCharIdx, setCurrentCharIdx] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [playerCoins, setPlayerCoins] = useState<number | null>(null);
+  const [playerGems, setPlayerGems] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!address) {
+      setPlayerCoins(null);
+      setPlayerGems(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`https://api.warzonewarriors.xyz/warzone/?walletAddress=${address}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setPlayerCoins(Number(data?.PlayerResources?.coin ?? 0));
+        setPlayerGems(Number(data?.PlayerResources?.gem ?? 0));
+      } catch {
+        /* network error — leave as null */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [address]);
 
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
   const handleCopy = async () => {
@@ -169,6 +194,12 @@ export function HomePage() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
+                {isConnected && playerCoins !== null && (
+                  <div className="hidden lg:flex items-center gap-2 mr-1">
+                    <CurrencyPill icon={iconCoins} value={playerCoins.toLocaleString()} />
+                    <CurrencyPill icon={iconGems} value={(playerGems ?? 0).toLocaleString()} />
+                  </div>
+                )}
                 <div className="hidden sm:flex items-center gap-1.5 shrink-0">
                   {privyConfigured && !privyReady && !isConnected ? (
                     <div className="h-9 w-28 rounded-md bg-muted/40 animate-pulse border border-border shrink-0" aria-hidden />
@@ -1050,6 +1081,13 @@ export function HomePage() {
     </>
   );
 }
+
+const CurrencyPill = ({ icon, value }: { icon: string; value: string }) => (
+  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-russo bg-card/60 border border-border/50">
+    <img src={icon} alt="" className="w-4 h-4 object-contain" />
+    <span className="font-orbitron text-[11px] font-bold text-foreground">{value}</span>
+  </div>
+);
 
 const HUDStat = ({ value, label }: { value: string; label: string }) => (
   <div>
