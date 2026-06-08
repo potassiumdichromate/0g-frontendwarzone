@@ -86,7 +86,10 @@ export function HomePage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`https://api.warzonewarriors.xyz/warzone/?walletAddress=${address}`);
+        const base = import.meta.env.DEV
+          ? "https://api.warzonewarriors.xyz/warzone/"
+          : "/api/warzone/";
+        const res = await fetch(`${base}?walletAddress=${address}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;

@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/warzone/:path*",
+      "destination": "https://api.warzonewarriors.xyz/warzone/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
