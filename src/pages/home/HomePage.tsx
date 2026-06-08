@@ -15,7 +15,6 @@ import { WARRIOR_CHARACTERS } from "@/constants/characters";
 import { ZeroGInfrastructureStatus } from "@/components/zerog/ZeroGInfrastructureStatus";
 
 import iconCoins from "@/assets/icon-coins.png";
-import iconGems from "@/assets/icon-gems.png";
 
 import marketplaceGuns from "@/assets/marketplace-guns.png";
 import soldierCard from "@/assets/soldier-card-1-clean.png";
@@ -59,7 +58,7 @@ const MARQUEE_ITEMS = ["CAMPAIGN", "ARMORY", "CHARACTERS", "BATTLE", "EARN", "UP
 export function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<Section>("home");
-  const { isConnected, address, disconnect, playerProfile, profileLoading } = useWallet();
+  const { isConnected, address, disconnect } = useWallet();
   const { ready: privyReady } = usePrivy();
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,10 +75,6 @@ export function HomePage() {
   const [copied, setCopied] = useState(false);
 
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
-  const coins = Number(playerProfile?.PlayerResources?.coin ?? 0);
-  const gems = Number(playerProfile?.PlayerResources?.gem ?? 0);
-  const formatResource = (value: number) => value.toLocaleString();
-
   const handleCopy = async () => {
     if (!address) return;
     try {
@@ -174,12 +169,6 @@ export function HomePage() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                {isConnected && (
-                  <div className="hidden lg:flex items-center gap-2 mr-1">
-                    <CurrencyPill icon={iconCoins} value={profileLoading ? "..." : formatResource(coins)} />
-                    <CurrencyPill icon={iconGems} value={profileLoading ? "..." : formatResource(gems)} />
-                  </div>
-                )}
                 <div className="hidden sm:flex items-center gap-1.5 shrink-0">
                   {privyConfigured && !privyReady && !isConnected ? (
                     <div className="h-9 w-28 rounded-md bg-muted/40 animate-pulse border border-border shrink-0" aria-hidden />
@@ -1061,13 +1050,6 @@ export function HomePage() {
     </>
   );
 }
-
-const CurrencyPill = ({ icon, value }: { icon: string; value: string }) => (
-  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-russo bg-card/60 border border-border/50">
-    <img src={icon} alt="" className="w-4 h-4 object-contain" />
-    <span className="font-orbitron text-[11px] font-bold text-foreground">{value}</span>
-  </div>
-);
 
 const HUDStat = ({ value, label }: { value: string; label: string }) => (
   <div>
