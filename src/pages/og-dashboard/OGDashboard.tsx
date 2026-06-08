@@ -222,8 +222,14 @@ export default function OGDashboard() {
   const activeWallet  = wallets[0];
   const walletAddress = useMemo(() => address || activeWallet?.address || '', [address, activeWallet?.address]);
 
-  // Core state
-  const [jwt, setJwt]                 = useState<string | null>(() => localStorage.getItem(ZG_JWT_KEY));
+  // Core state — reuse the main game JWT (same /auth/login endpoint, no extra sign-in needed)
+  const [jwt, setJwt]                 = useState<string | null>(() => {
+    const mainToken = localStorage.getItem('token');
+    const zgToken   = localStorage.getItem(ZG_JWT_KEY);
+    const chosen    = mainToken || zgToken;
+    console.log('[OGDashboard] init jwt:', { mainToken: mainToken?.slice(0,20), zgToken: zgToken?.slice(0,20), chosen: chosen?.slice(0,20) });
+    return chosen;
+  });
   const [authLoading, setAuthLoading] = useState(false);
   const [tab, setTab]                 = useState<Tab>('overview');
   const [notification, setNotification] = useState<{ msg: string; type: LogLevel } | null>(null);
@@ -261,7 +267,67 @@ export default function OGDashboard() {
   const [integrityData,    setIntegrityData]    = useState<{ saveIndex: number; layers: Record<string, boolean>; allPassed: boolean } | null>(null);
   const [integrityLoading, setIntegrityLoading] = useState(false);
 
+  // ── Data Fetchers (declared before effects that reference them) ──────
+
+  const fetchOverviewData = useCallback(async (token: string) => {
+    console.log('[OGDashboard] fetchOverviewData called with token:', token?.slice(0,20), '| length:', token?.length);
+    setLoadingDash(true);
+    log('info', 'Loading 0G network data...');
+    try {
+      const [dash, badge, net, gStats, cStats] = await Promise.allSettled([
+        api.getDashboard(token),
+        api.getBadge(token),
+        api.getNetworkStatus(),
+        api.getStats(),
+        api.getComputeStats(),
+      ]);
+      console.log('[OGDashboard] fetchOverviewData results:', {
+        dash:   dash.status,   dashErr:   dash.status   === 'rejected' ? (dash as any).reason?.message : undefined,
+        badge:  badge.status,  badgeErr:  badge.status  === 'rejected' ? (badge as any).reason?.message : undefined,
+        net:    net.status,
+        gStats: gStats.status,
+        cStats: cStats.status,
+      });
+      if (dash.status     === 'fulfilled') setDashData(dash.value);
+      if (badge.status    === 'fulfilled') setBadgeData(badge.value);
+      if (net.status      === 'fulfilled') setNetworkData(net.value);
+      if (gStats.status   === 'fulfilled') setGlobalStats(gStats.value);
+      if (cStats.status   === 'fulfilled') setComputeStats(cStats.value);
+      log('success', 'Dashboard data loaded.');
+    } catch (err: any) {
+      console.error('[OGDashboard] fetchOverviewData caught error:', err.message);
+      log('warn', `Partial data load: ${err.message}`);
+    } finally {
+      setLoadingDash(false);
+    }
+  }, []);
+
   // ── Effects ───────────────────────────────────────────────────────────
+
+  // Keep jwt in sync with the main game token (e.g. after re-login or session refresh)
+  // Also explicitly reload dashboard data when the token changes so we don't rely on
+  // useEffect([jwt]) which won't fire if jwt was already the same value.
+  useEffect(() => {
+    const sync = (e: Event) => {
+      const mainToken = localStorage.getItem('token');
+      console.log('[OGDashboard] sync event:', e.type, { mainToken: mainToken?.slice(0,20) });
+      setJwt(prev => {
+        console.log('[OGDashboard] setJwt in sync:', { prev: prev?.slice(0,20), mainToken: mainToken?.slice(0,20), willUpdate: mainToken !== prev });
+        if (mainToken && mainToken !== prev) {
+          fetchOverviewData(mainToken);
+          return mainToken;
+        }
+        if (!mainToken) return null;
+        return prev;
+      });
+    };
+    window.addEventListener('warzone-session-changed', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('warzone-session-changed', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, [fetchOverviewData]);
 
   useEffect(() => { if (!isConnected) navigate('/'); }, [isConnected, navigate]);
   useEffect(() => { logEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
@@ -271,12 +337,17 @@ export default function OGDashboard() {
     return () => clearTimeout(id);
   }, [notification]);
 
+  // Sync jwt from main game token whenever wallet/session changes
   useEffect(() => {
-    if (!jwt && walletAddress && activeWallet) authenticate();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walletAddress, activeWallet]);
+    const mainToken = localStorage.getItem('token');
+    console.log('[OGDashboard] wallet/activeWallet changed sync:', { walletAddress, activeWallet: activeWallet?.address, mainToken: mainToken?.slice(0,20), currentJwt: jwt?.slice(0,20) });
+    if (mainToken && mainToken !== jwt) {
+      setJwt(mainToken);
+    }
+  }, [walletAddress, activeWallet]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    console.log('[OGDashboard] jwt effect fired:', { jwt: jwt?.slice(0,20), hasJwt: !!jwt });
     if (jwt) fetchOverviewData(jwt);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jwt]);
@@ -321,38 +392,13 @@ export default function OGDashboard() {
       setJwt(token);
       log('success', 'Session established. Valid for 7 days.');
       setNotification({ msg: 'Authenticated with 0G network.', type: 'success' });
+      await fetchOverviewData(token);
     } catch (err: any) {
       log('error', `Auth failed: ${err.message}`);
     } finally {
       setAuthLoading(false);
     }
-  }, [walletAddress, activeWallet]);
-
-  // ── Data Fetchers ─────────────────────────────────────────────────────
-
-  const fetchOverviewData = useCallback(async (token: string) => {
-    setLoadingDash(true);
-    log('info', 'Loading 0G network data...');
-    try {
-      const [dash, badge, net, gStats, cStats] = await Promise.allSettled([
-        api.getDashboard(token),
-        api.getBadge(token),
-        api.getNetworkStatus(),
-        api.getStats(),
-        api.getComputeStats(),
-      ]);
-      if (dash.status     === 'fulfilled') setDashData(dash.value);
-      if (badge.status    === 'fulfilled') setBadgeData(badge.value);
-      if (net.status      === 'fulfilled') setNetworkData(net.value);
-      if (gStats.status   === 'fulfilled') setGlobalStats(gStats.value);
-      if (cStats.status   === 'fulfilled') setComputeStats(cStats.value);
-      log('success', 'Dashboard data loaded.');
-    } catch (err: any) {
-      log('warn', `Partial data load: ${err.message}`);
-    } finally {
-      setLoadingDash(false);
-    }
-  }, []);
+  }, [walletAddress, activeWallet, fetchOverviewData]);
 
   const fetchActivity = useCallback(async (token: string, page: number) => {
     setLoadingActivity(true);
@@ -442,8 +488,7 @@ export default function OGDashboard() {
   }, [walletAddress]);
 
   const handleDisconnect = useCallback(async () => {
-    localStorage.removeItem(ZG_JWT_KEY);
-    ['walletConnected', 'walletAddress', 'token'].forEach(k => localStorage.removeItem(k));
+    [ZG_JWT_KEY, 'walletConnected', 'walletAddress', 'token'].forEach(k => localStorage.removeItem(k));
     try { await disconnect(); } catch {}
     navigate('/');
   }, [disconnect, navigate]);

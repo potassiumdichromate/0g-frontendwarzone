@@ -96,6 +96,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const backendLoginSentRef = useRef(null);
   const backendLoginSentFromConnectedRef = useRef(null);
   const logoutInProgressRef = useRef(false);
+  const reAuthInProgressRef = useRef(false);
   const privyLoginAttemptedForRef = useRef<string | null>(null);
   const fallbackLoginAttemptedForRef = useRef<string | null>(null);
   const [privyAddress, setPrivyAddress] = useState(null);
@@ -215,7 +216,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener('warzone-session-changed', syncStoredSession);
     };
   }, [syncStoredSession]);
-  
+
   // Check if wallet is connected on mount and on address change.
   // Deps are intentionally [wagmiIsConnected, wagmiAddress] only — chainId/switchChain
   // would cause re-runs when the chain switches, looping the backend /login call.
@@ -604,6 +605,40 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setUserTokenLockRef.current = null;
     }
   }, [checkPlayerName, refreshProfile, privyWallets]);
+
+  useEffect(() => {
+    const handleAuthExpired = async () => {
+      if (logoutInProgressRef.current || reAuthInProgressRef.current) return;
+
+      const currentAddress =
+        wagmiAddress || privyAddress || localStorage.getItem('walletAddress');
+      if (!currentAddress) {
+        void handleDisconnect();
+        return;
+      }
+
+      reAuthInProgressRef.current = true;
+      console.log('[WalletContext] Token expired, attempting re-authentication for', currentAddress);
+
+      localStorage.removeItem('token');
+
+      try {
+        await setUserToken(currentAddress);
+        if (localStorage.getItem('token')) {
+          console.log('[WalletContext] Re-authentication successful');
+          reAuthInProgressRef.current = false;
+          return;
+        }
+      } catch (err) {
+        console.warn('[WalletContext] Re-authentication failed:', err);
+      }
+
+      reAuthInProgressRef.current = false;
+      void handleDisconnect();
+    };
+    window.addEventListener('warzone-auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('warzone-auth-expired', handleAuthExpired);
+  }, [handleDisconnect, setUserToken, wagmiAddress, privyAddress]);
 
   // When a Privy session is authenticated, mirror it into our wallet state.
   // Deps are kept minimal — privyUser/privyWallets change references every render,

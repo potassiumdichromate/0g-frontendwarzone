@@ -30,6 +30,16 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('warzone-auth-expired'));
+    }
+    return Promise.reject(error);
+  },
+);
+
 /** GET /player/leaderboard */
 export const getLeaderboard = async (params: Record<string, unknown> = {}) => {
   try {

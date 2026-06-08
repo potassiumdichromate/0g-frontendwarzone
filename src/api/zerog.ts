@@ -3,11 +3,31 @@ const BASE = "https://zerog-warzonewarriors.onrender.com";
 export const ZG_JWT_KEY = 'ZGJwt';
 
 async function req<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const authHeader = (options.headers as Record<string, string>)?.Authorization;
+  console.log('[zerog.req]', path, authHeader ? `Bearer ${authHeader.slice(7, 27)}...` : 'no-auth');
   const res = await fetch(`${BASE}${path}`, options);
   if (!res.ok) {
     let err: Record<string, string> = {};
     try { err = await res.json(); } catch {}
-    throw new Error(err?.detail || err?.error || err?.message || `HTTP ${res.status}`);
+    const message = err?.detail || err?.error || err?.message || `HTTP ${res.status}`;
+    if (res.status === 401) {
+      if (authHeader) {
+        const usedToken = authHeader.slice(7);
+        const freshToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (freshToken && freshToken !== usedToken) {
+          console.log('[zerog.req] 401 — retrying with refreshed token');
+          const retryRes = await fetch(`${BASE}${path}`, {
+            ...options,
+            headers: { ...(options.headers as Record<string, string>), Authorization: `Bearer ${freshToken}` },
+          });
+          if (retryRes.ok) return retryRes.json() as Promise<T>;
+        }
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('warzone-auth-expired'));
+      }
+    }
+    throw new Error(message);
   }
   return res.json() as Promise<T>;
 }
