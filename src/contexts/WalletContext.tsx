@@ -591,6 +591,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const loginResult = await loginUser(_address, provider);
       if (loginResult.token) {
         localStorage.setItem('token', loginResult.token);
+        localStorage.setItem('ZGJwt', loginResult.token);
         localStorage.setItem('walletAddress', _address);
         setStoredSession({ walletAddress: _address, token: loginResult.token });
         await refreshProfile(_address);
@@ -621,6 +622,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       console.log('[WalletContext] Token expired, attempting re-authentication for', currentAddress);
 
       localStorage.removeItem('token');
+      localStorage.removeItem('ZGJwt');
 
       try {
         await setUserToken(currentAddress);

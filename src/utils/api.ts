@@ -129,6 +129,7 @@ export const checkNameAvailability = async (name: string) => {
   } catch (error: any) {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      localStorage.removeItem('ZGJwt');
       window.location.href = '/';
     }
     const message = error.response?.data?.message || error.message || 'Name is unavailable';
@@ -146,6 +147,7 @@ export const savePlayerName = async (name: string) => {
   } catch (error: any) {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      localStorage.removeItem('ZGJwt');
       window.location.href = '/';
     }
     throw error;
@@ -177,6 +179,7 @@ export const loginUser = async (
 ) => {
   try {
     localStorage.removeItem('token');
+    localStorage.removeItem('ZGJwt');
 
     const provider =
       ethereumProvider ??
@@ -198,6 +201,7 @@ export const loginUser = async (
     if (data?.token) {
       localStorage.setItem('walletAddress', walletAddress);
       localStorage.setItem('token', data.token);
+      localStorage.setItem('ZGJwt', data.token);
       notifySessionChanged();
       return { success: true, token: data.token, wallet: data.wallet, expiresIn: data.expiresIn };
     }
@@ -206,6 +210,7 @@ export const loginUser = async (
   } catch (error: any) {
     console.error('Login error:', error);
     localStorage.removeItem('token');
+    localStorage.removeItem('ZGJwt');
     localStorage.removeItem('walletAddress');
     notifySessionChanged();
 
@@ -281,6 +286,7 @@ export const getWalletAddress = () => localStorage.getItem('walletAddress');
 
 export const logout = () => {
   localStorage.removeItem('token');
+  localStorage.removeItem('ZGJwt');
   localStorage.removeItem('walletAddress');
   localStorage.removeItem('walletConnected');
   localStorage.removeItem('Intraverse');

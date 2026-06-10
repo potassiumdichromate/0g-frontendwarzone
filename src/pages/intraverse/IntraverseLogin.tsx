@@ -129,6 +129,7 @@ function persistIntraverseSession(data) {
   }
   if (data?.token) {
     localStorage.setItem('token', String(data.token));
+    localStorage.setItem('ZGJwt', String(data.token));
   }
   if (data?.Intraverse) {
     localStorage.setItem('Intraverse', JSON.stringify(data.Intraverse));
