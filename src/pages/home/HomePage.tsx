@@ -358,7 +358,7 @@ export function HomePage() {
                 }
               }}
             >
-              <source src="/videos/hero-bg.mp4" type="video/mp4" />
+              <source src={`${import.meta.env.BASE_URL}videos/hero-bg.mp4`} type="video/mp4" />
             </video>
             <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-background/20 to-transparent hidden md:block" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent md:hidden" />
@@ -503,7 +503,7 @@ export function HomePage() {
         <section id="game-features" className="relative z-10 py-12 sm:py-16 overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-[50vh] md:h-[56.25vw] md:max-h-screen z-0 overflow-hidden">
             <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-30">
-              <source src="/videos/war-scene.mp4" type="video/mp4" />
+              <source src={`${import.meta.env.BASE_URL}videos/war-scene.mp4`} type="video/mp4" />
             </video>
             <div className="absolute inset-0 bg-background/60" />
           </div>
@@ -690,7 +690,7 @@ export function HomePage() {
 
           <div className="absolute inset-x-0 top-0 h-[50vh] md:h-[56.25vw] md:max-h-screen z-0 overflow-hidden">
             <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-25">
-              <source src="/videos/action.mp4" type="video/mp4" />
+              <source src={`${import.meta.env.BASE_URL}videos/action.mp4`} type="video/mp4" />
             </video>
             <div className="absolute inset-0 bg-background/65" />
           </div>

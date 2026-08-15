@@ -70,7 +70,7 @@ function AppShell() {
 function App() {
   return (
     <WalletProvider>
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <AppShell />
       </Router>
     </WalletProvider>

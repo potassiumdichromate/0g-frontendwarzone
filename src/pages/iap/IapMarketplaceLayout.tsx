@@ -236,7 +236,7 @@ const IapMarketplaceLayout = ({
       {/* ── Video background ── */}
       <div className="fixed inset-0 z-0">
         <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-30">
-          <source src="/videos/war-scene.mp4" type="video/mp4" />
+          <source src={`${import.meta.env.BASE_URL}videos/war-scene.mp4`} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-background/70" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/60 to-background/95" />

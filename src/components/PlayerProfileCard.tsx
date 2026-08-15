@@ -68,7 +68,7 @@ const PlayerProfileCard = ({ playerData }) => {
               <div className="avatar">
                 {!avatarError ? (
                   <img 
-                    src="/assets/warrior-avatar.png" 
+                    src={`${import.meta.env.BASE_URL}assets/warrior-avatar.png`}
                     alt="Warrior Avatar"
                     className="avatar-image"
                     onError={() => setAvatarError(true)}
